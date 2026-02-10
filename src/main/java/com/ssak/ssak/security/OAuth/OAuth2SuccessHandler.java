@@ -34,7 +34,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String token = jwtTokenProvider.generateToken(user.getUserEmail());
 
         // 3. 프론트엔드 리다이렉트 TODO: 프론트엔드 uri에 맞게 수정필요
-        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000")
+        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:8081")
                 .queryParam("token", token)
                 .build()
                 .toUriString();

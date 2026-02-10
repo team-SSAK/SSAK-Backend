@@ -17,7 +17,7 @@ public enum ErrorCode {
     EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "A004", "이메일 인증이 완료되지않았습니다."),
     EMAIL_VERIFICATION_INVALID(HttpStatus.BAD_REQUEST, "A005", "인증코드가 올바르지 않거나 만료되었습니다"),
     SOCIAL_LOGIN_REQUIRED(HttpStatus.BAD_REQUEST, "A006", "소셜 로그인으로 가입된 계정입니다. 해당 소셜 로그인을 이용해주세요"),
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "A007", "가입되지 않은 사용자입니다");
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "A007", "사용자를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

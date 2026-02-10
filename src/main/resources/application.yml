@@ -6,9 +6,6 @@ spring:
     password: ${db.password}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
-  profiles:
-    active: dev
-
   jpa:
     hibernate:
       ddl-auto: update
@@ -86,6 +83,8 @@ logging:
     com.ssak.ssak: debug
     org.hibernate.SQL: debug
     org.hibernate.orm.jdbc.bind: trace
+    org.springframework.web.cors: DEBUG
+    org.springframework.security: DEBUG
 
 # JWT 설정
 jwt:

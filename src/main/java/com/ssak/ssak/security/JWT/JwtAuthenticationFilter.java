@@ -24,6 +24,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+
+        // OPTIONS 요청은 JWT 검증을 하지 않고 즉시 다음 필터(CORS 필터 등)로 넘김
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // permitAll 경로는 JWT 검증 스킵
+        String requestURI = request.getRequestURI();
+        if (requestURI.startsWith("/api/auth/") ||
+                requestURI.startsWith("/oauth2/") ||
+                requestURI.startsWith("/login/oauth2/") ||
+                requestURI.startsWith("/api/email/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         // 1. 요청 헤더에서 JWT 토큰 추출
         String token = jwtTokenProvider.resolveToken(request);
 

@@ -7,20 +7,26 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class CorsConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        System.out.println("========================================");
+        System.out.println("🔥 CORS Bean 생성됨!");
+        System.out.println("========================================");
+
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 허용할 출처 (프론트엔드 주소)
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",    // React 개발 서버
-                //TODO: 배포 서버 추가하기
+        List<String> allowedOrigins = Arrays.asList(
+                "http://localhost:8081",
                 "http://localhost:8080"
-        ));
+        );
+        configuration.setAllowedOrigins(allowedOrigins);
+
         //프론트엔드에서 헤더에 있는 토큰을 읽어야 한다면
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
 
@@ -32,6 +38,9 @@ public class CorsConfig {
 
         // 인증 정보 포함 여부
         configuration.setAllowCredentials(true);
+
+        // ⭐ preflight 캐싱 시간 설정
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

@@ -56,7 +56,7 @@ public class AuthService {
         // 6. 인증정보 Redis에서 제거
         emailVerificationService.clearVerification(request.getUserEmail(), EmailVerificationType.SIGNUP);
 
-        return new UserResponse(savedUser);
+        return UserResponse.from(savedUser);
     }
 
     // 로그인
@@ -71,17 +71,13 @@ public class AuthService {
             throw new CustomException(ErrorCode.SOCIAL_LOGIN_REQUIRED);
         }
 
-        //TODO: 이메일 인증 미완료시
-        //if(!user.isEmailVerified()) {
-        //  throw new CustomException(ErrorCode.EMAIL_NOT_VERIFIED
-        //}
-
         // 3. 비밀번호 검증
         if(!passwordEncoder.matches(request.getUserPw(), user.getUserPw())) {
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
         }
         log.debug("비밀번호 검증 완료");
         log.debug(user.getUserEmail());
+
         // 4. JWT 토큰 생성
         String token = jwtTokenProvider.generateToken(user.getUserEmail());
         //TODO : access, refresh 따로 생성
