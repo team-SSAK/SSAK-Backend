@@ -1,28 +1,63 @@
 package com.ssak.ssak.service.user;
 
-import com.ssak.ssak.domain.user.LoginType;
-import com.ssak.ssak.domain.user.User;
-import com.ssak.ssak.domain.user.UserRepository;
+import com.ssak.ssak.domain.Point.PointHistRepository;
+import com.ssak.ssak.domain.coupon.CouponHistRepository;
+import com.ssak.ssak.domain.coupon.CouponWishRepository;
+import com.ssak.ssak.domain.restaurant.RestaurantWishRepository;
+import com.ssak.ssak.domain.user.*;
 import com.ssak.ssak.domain.user.dto.*;
 import com.ssak.ssak.domain.util.EmailVerificationType;
 import com.ssak.ssak.exception.CustomException;
 import com.ssak.ssak.exception.ErrorCode;
 import com.ssak.ssak.security.JWT.JwtTokenProvider;
 import com.ssak.ssak.service.util.EmailVerificationService;
+import io.jsonwebtoken.ExpiredJwtException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AuthService {
+    private final RestTemplate restTemplate;
     private final UserRepository userRepository;
     private final EmailVerificationService emailVerificationService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final RedisTemplate<Object, Object> redisTemplate;
+    private final NotificationRepository notificationRepository;
+    private final PointHistRepository pointHistRepository;
+    private final CouponHistRepository couponHistRepository;
+    private final CouponWishRepository couponWishRepository;
+    private final RestaurantWishRepository restaurantWishRepository;
+
+    @Value("${jwt.refresh-expiration}")
+    private Long refreshExpiration;
+
+    @Value("${kakao.client.id}")
+    private String kakaoClientId;
+
+    @Value("${kakao.redirect-uri}")
+    private String kakaoRedirectUri;
+
+    @Value("${kakao.admin-key}")
+    private String kakaoAdminKey;
 
     // 회원가입 (일반)
     @Transactional
@@ -47,21 +82,29 @@ public class AuthService {
                 .userPw(encodedPassword)
                 .userNm(request.getUserNm())
                 .loginType(LoginType.NORMAL)
-                .marketingAgreeYn(request.isMarketingAgreeYn())
                 .build();
 
         // 5. 데이터베이스에 저장
         User savedUser = userRepository.save(user);
 
-        // 6. 인증정보 Redis에서 제거
+        // 6. 사용자 마케팅 수신 여부 notification 테이블에 저장
+        Notification savedNotification = Notification.builder()
+                .user(savedUser)
+                .communityNotiYn(true)
+                .eventNotiYn(request.isMarketingAgreeYn())
+                .nightNotiYn(request.isMarketingAgreeYn())
+                .build();
+        notificationRepository.save(savedNotification);
+
+        // 7. 인증정보 Redis에서 제거
         emailVerificationService.clearVerification(request.getUserEmail(), EmailVerificationType.SIGNUP);
 
         return UserResponse.from(savedUser);
     }
 
     // 로그인
-    @Transactional(readOnly = true)
-    public TokenResponse generalLogin(LoginRequest request) {
+    @Transactional
+    public TokenResponse generalLogin(LoginRequest request, HttpServletResponse response) {
         // 1. 사용자 조회
         User user = userRepository.findByUserEmail(request.getUserEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -79,15 +122,72 @@ public class AuthService {
         log.debug(user.getUserEmail());
 
         // 4. JWT 토큰 생성
-        String token = jwtTokenProvider.generateToken(user.getUserEmail());
-        //TODO : access, refresh 따로 생성
-        //TODO: RefreshToken 저장 (기존 토큰 삭제 후)
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getUserEmail());
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUserEmail());
 
-        return new TokenResponse(token);
+        // 5. Redis에 RefreshToken 저장(기존 토큰 덮어쓰기)
+        //Key : "RT:" + 이메일, Value: RefreshToken 값, TTL:14일
+        redisTemplate.opsForValue().set(
+                "RT:" + user.getUserEmail(),
+                refreshToken,
+                refreshExpiration,
+                TimeUnit.MILLISECONDS
+        );
+
+        // 6. Refresh Token을 쿠키로 설정
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(false) // 로컬 테스트 시 false, 운영 시 true
+                .path("/")
+                .maxAge(refreshExpiration / 1000)
+                .sameSite("Lax")
+                .build();
+        response.addHeader("Set-Cookie", cookie.toString());
+
+        return new TokenResponse(accessToken);
     }
 
-    //TODO: 토큰 갱신
+    // AccessToken 재발급
+    public TokenResponse reissue(String refreshToken, HttpServletResponse response) {
+        // 1. RefreshToken 검증
+        if(!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+        // 2. 토큰에서 이메일 추출
+        String email = jwtTokenProvider.getEmail(refreshToken);
 
+        // 3. Redis에서 해당 이메일의 Refresh Token 가져오기
+        String savedRefreshToken = (String) redisTemplate.opsForValue().get("RT:" + email);
+
+        // 4. 요청 받은 토큰과 Redis 토큰 비교
+        if (savedRefreshToken == null || !savedRefreshToken.equals(refreshToken)) {
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        // 5. 새로운 accessToken 생성
+        String newAccessToken = jwtTokenProvider.generateAccessToken(email);
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(email);
+
+        // 6. Redis 업데이트
+        redisTemplate.opsForValue().set(
+                "RT:" + email,
+                newRefreshToken,
+                refreshExpiration,
+                TimeUnit.MILLISECONDS
+        );
+
+        // 6. 새 RefreshToken 쿠키로 전달
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(false)      // https환경은 true
+                .path("/")
+                .maxAge(refreshExpiration/1000) // 초단위 설정
+                .sameSite("Lax")
+                .build();
+        response.addHeader("Set-Cookie", cookie.toString());
+
+        return new TokenResponse(newAccessToken);
+    }
 
     // 비밀번호 재설정
     @Transactional
@@ -110,4 +210,123 @@ public class AuthService {
 
         return "비밀번호가 재설정되었습니다.";
     }
+
+    // 로그아웃
+    @Transactional
+    public String logout(HttpServletRequest request, HttpServletResponse response) {
+        // 1. 헤더에서 AccessToken 추출
+        String accessToken = jwtTokenProvider.resolveToken(request);
+
+        // 토큰이 아예 없는 경우
+        if (accessToken == null || accessToken.isEmpty()) {
+            throw new CustomException(ErrorCode.ACCESS_TOKEN_REQUIRED);
+        }
+
+        try{
+            // 1. 토큰 유효성 검사
+            if(jwtTokenProvider.validateToken(accessToken)) {
+                String email =  jwtTokenProvider.getEmail(accessToken);
+                Long expiration = jwtTokenProvider.getExpiration(accessToken);
+
+                // 2. Redis에서 해당 유저의 RefreshToken 삭제
+                redisTemplate.delete("RT:" + email);
+
+                // 3. AccessToken 블랙리스트 추가
+                redisTemplate.opsForValue().set(
+                        "BL:" + accessToken,
+                        "logout",
+                        expiration,
+                        TimeUnit.MILLISECONDS
+                );
+                log.info("Access Token 블랙리스트 등록 완료");
+            } else {
+                // 토큰이 유효하지 않은 경우
+                throw new CustomException(ErrorCode.INVALID_REQUEST);
+            }
+        } catch (ExpiredJwtException e) {
+            throw new CustomException(ErrorCode.ACCESS_TOKEN_EXPIRED);
+        }
+
+        // 4. 쿠키 삭제 명령 to 브라우저
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0) // 즉시 삭제
+                .sameSite("Lax")
+                .build();
+        response.addHeader("Set-Cookie", cookie.toString());
+
+        // 5. 소셜 로그인한 사용자인 경우
+        User user = userRepository.findByUserEmail(jwtTokenProvider.getEmail(accessToken)).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if(user.getLoginType() == LoginType.KAKAO){ // 카카오 로그인
+            return "https://kauth.kakao.com/oauth/logout"
+                    + "?client_id=" + kakaoClientId
+                    + "&logout_redirect_uri=" + kakaoRedirectUri;
+        } else { // * 구글은 따로 로그아웃 기능 제공 X
+            return "성공적으로 로그아웃되었습니다.";
+        }
+    }
+
+    // 회원탈퇴
+    @Transactional
+    public String withdrawal(HttpServletRequest request, HttpServletResponse response) {
+        // 1. 헤더에서 AccessToken 추출
+        String accessToken = jwtTokenProvider.resolveToken(request);
+
+        // 토큰이 없는 경우 / 올바른 토큰이 아닌 경우
+        if (accessToken == null || accessToken.isEmpty()) {
+            throw new CustomException(ErrorCode.ACCESS_TOKEN_REQUIRED);
+        } else if (!jwtTokenProvider.validateToken(accessToken)) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);  // INVALID_TOKEN
+        }
+
+        String email = jwtTokenProvider.getEmail(accessToken);
+        User user = userRepository.findByUserEmail(email).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 2. 소셜 로그인 연동 해제 (Unlink)
+        if (user.getLoginType() == LoginType.KAKAO){
+            unlinkKakao(user.getProviderId());
+        }
+        // * 구글은 프론트 측에서 처리하는 것이 더 효율적인 것 같음
+
+        // 3. 연관 데이터 삭제
+        pointHistRepository.deleteAllByUser(user);
+        couponHistRepository.deleteAllByUser(user);
+        couponWishRepository.deleteAllByUser(user);
+        notificationRepository.deleteAllByUser(user);
+        restaurantWishRepository.deleteAllByUser(user);
+
+        // 4. 리프레시 토큰 삭제
+        redisTemplate.delete("RT:" + email);
+
+        // 5. 유저 삭제
+        userRepository.deleteById(user.getUserId());
+
+        return "회원 탈퇴가 완료되었습니다.";
+    }
+
+    private void unlinkKakao(String providerId) {
+        String url = "https://kapi.kakao.com/v1/user/unlink";
+
+        // 1. 헤더 설정
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.set("Authorization", "KakaoAK " + kakaoAdminKey);
+
+        // 2. 파라미터 설정
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("target_id_type", "user_id");
+        body.add("target_id", providerId);
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
+        try {
+            restTemplate.postForEntity(url, request, String.class);
+        } catch (Exception e) {
+            log.error("카카오 연동 해제 실패 (providerId: {}): {}", providerId, e.getMessage());
+        }
+    }
+
 }

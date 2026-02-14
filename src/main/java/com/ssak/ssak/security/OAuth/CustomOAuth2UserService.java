@@ -45,6 +45,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         User user = userRepository.findByUserEmail(oAuth2UserInfo.getEmail())
                 .orElseGet(() -> createUser(oAuth2UserInfo));
 
+        // TODO: 마케팅 알림 업데이트...?
+
         return new CustomUserDetails(user, oAuth2User.getAttributes());
     }
 
@@ -55,7 +57,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .loginType(oAuth2UserInfo.getProvider())
                 .providerId(oAuth2UserInfo.getProviderId())
                 .userPw(null)
-                .marketingAgreeYn(false)
                 .build();
 
         return userRepository.save(newUser);

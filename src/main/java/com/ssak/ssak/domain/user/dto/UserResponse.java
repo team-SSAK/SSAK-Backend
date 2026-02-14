@@ -13,11 +13,13 @@ import lombok.NoArgsConstructor;
 public class UserResponse {
     private String userEmail;
     private String userNm;
-    private boolean marketingAgreeYn;
+    private int userPoint;
 
-    public UserResponse(User user) {
-        this.userEmail = user.getUserEmail();
-        this.userNm = user.getUserNm();
-        this.marketingAgreeYn = user.isMarketingAgreeYn();
+    public static UserResponse from(User user) {
+        return new UserResponse(
+          user.getUserEmail(),
+          user.getUserNm(),
+          user.getCurrentPoint()
+        );
     }
 }

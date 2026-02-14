@@ -27,6 +27,9 @@ public class GlobalExceptionHandler {
     // 3. 시스템 에러 (나머지)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
+        // 개발용 로그 출력
+        e.printStackTrace();
+        log.error(e.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorResponse.from(ErrorCode.INTERNAL_SERVER_ERROR));
     }
 }
