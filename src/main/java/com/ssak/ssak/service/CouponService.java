@@ -1,0 +1,81 @@
+package com.ssak.ssak.service;
+
+import com.ssak.ssak.domain.coupon.*;
+import com.ssak.ssak.domain.coupon.dto.CouponHistResponse;
+import com.ssak.ssak.domain.coupon.dto.CouponWishActionResponse;
+import com.ssak.ssak.domain.coupon.dto.CouponWishResponse;
+import com.ssak.ssak.domain.user.User;
+import com.ssak.ssak.domain.user.UserRepository;
+import com.ssak.ssak.exception.CustomException;
+import com.ssak.ssak.exception.ErrorCode;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class CouponService {
+    private final CouponHistRepository couponHistRepository;
+    private final CouponWishRepository couponWishRepository;
+    private final UserRepository userRepository;
+    private final CouponRepository couponRepository;
+
+    /**
+     * 특정 사용자의 특정 상태의 쿠폰 목록을 조회한다.
+     * @param userId
+     * @param option
+     * @return
+     */
+    @Transactional(readOnly = true)
+    public List<CouponHistResponse> getMyCouponList(Long userId, CouponStatus option) {
+
+        List<CouponHist> coupons = couponHistRepository.findAllByUser_UserIdAndCouponStatus(userId, option);
+
+        return coupons.stream()
+                .map(CouponHistResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 특정 사용자의 쿠폰 찜 목록을 조회한다.
+     * @param userId
+     * @return
+     */
+    @Transactional(readOnly = true)
+    public List<CouponWishResponse> getMyWishCouponList(Long userId) {
+        List<CouponWish> coupons = couponWishRepository.findAllByUser_UserId(userId);
+
+        return coupons.stream()
+                .map(CouponWishResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 특정 사용자의 특정 쿠폰 찜을 등록 / 취소 한다.
+     * @param userId
+     * @param couponId
+     * @return
+     */
+    @Transactional
+    public CouponWishActionResponse updateCouponWishStatus(Long userId, Long couponId) {
+        // 1. 기존 찜 내역이 있는 지 조회
+        Optional<CouponWish> couponWish = couponWishRepository.findByUser_UserIdAndCoupon_CouponId(userId, couponId);
+
+        // 2. 찜 내역이 존재한다면, 찜 취소
+        if (couponWish.isPresent()) {
+            couponWishRepository.delete(couponWish.get());
+            return new CouponWishActionResponse(false, couponId);
+        } else { // 3. 찜 내역이 존재하지 않는다면, 찜하기
+            User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            Coupon coupon = couponRepository.findById(couponId).orElseThrow(() -> new CustomException(ErrorCode.COUPON_NOT_FOUND));
+            couponWishRepository.save(CouponWish.createCouponWish(user, coupon));
+            return new CouponWishActionResponse(true, couponId);
+        }
+    }
+}
