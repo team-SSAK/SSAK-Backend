@@ -1,4 +1,4 @@
-package com.ssak.ssak.domain.common.entity;
+package com.ssak.ssak.domain.common;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
