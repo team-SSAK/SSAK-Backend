@@ -53,7 +53,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         // 4. Refresh Token을 HttpOnly 쿠키에 담기
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(false)      // https환경은 true
+                .secure(true)      // https환경은 true
                 .path("/")
                 .maxAge(refreshExpiration/1000) // 초단위 설정
                 .sameSite("Lax")

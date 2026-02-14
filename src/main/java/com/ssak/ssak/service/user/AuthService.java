@@ -137,7 +137,7 @@ public class AuthService {
         // 6. Refresh Token을 쿠키로 설정
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(false) // 로컬 테스트 시 false, 운영 시 true
+                .secure(true) // 로컬 테스트 시 false, 운영 시 true
                 .path("/")
                 .maxAge(refreshExpiration / 1000)
                 .sameSite("Lax")
@@ -179,7 +179,7 @@ public class AuthService {
         // 6. 새 RefreshToken 쿠키로 전달
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(false)      // https환경은 true
+                .secure(true)      // https환경은 true
                 .path("/")
                 .maxAge(refreshExpiration/1000) // 초단위 설정
                 .sameSite("Lax")
@@ -250,7 +250,7 @@ public class AuthService {
         // 4. 쿠키 삭제 명령 to 브라우저
         ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .maxAge(0) // 즉시 삭제
                 .sameSite("Lax")
