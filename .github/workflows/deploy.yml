@@ -60,7 +60,7 @@ jobs:
             # 컨테이너 재시작
             docker run -d -p 8080:8080 \
             --name seederslab-server \
-            --env-file /.env \
+            --env-file ./.env \
             ${{ secrets.DOCKERHUB_USERNAME }}/seederslab-server:latest
             
             # 사용하지 않는 이미지 정리
