@@ -55,7 +55,10 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/oauth2/authorization/**",
                                 "/login/oauth2/**",
-                                "/api/email/**"
+                                "/api/email/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
                         ).permitAll()
                         //나머지는 모두 인증 필요
                         .anyRequest().authenticated()
