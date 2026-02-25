@@ -20,10 +20,11 @@ public class CorsConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 허용할 출처 (프론트엔드 주소)
+        // 허용할 출처
         List<String> allowedOrigins = Arrays.asList(
-                "http://localhost:8081",
-                "http://localhost:8080"
+                "http://localhost:8081",          // 프론트 테스트
+                "http://localhost:8080",          // 로컬 테스트 서버
+                "https://seederslab.n-e.kr"       // 배포 서버
         );
         configuration.setAllowedOrigins(allowedOrigins);
 
