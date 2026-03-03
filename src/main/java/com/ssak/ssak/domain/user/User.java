@@ -33,6 +33,9 @@ public class User extends BaseEntity {
     @Column(name = "USER_POINT", nullable = false)
     private int currentPoint = 0;   // 사용자의 현재 포인트
 
+    @Column(name = "USER_PROFILE_IMG", nullable = true)
+    private String userProfileImg;  // 사용자의 프로필 이미지
+
     public void changePassword(String newPassword) {
         this.userPw = newPassword;
     }
@@ -47,18 +50,21 @@ public class User extends BaseEntity {
     }
 
     // 프로필 수정
-    public void modifyProfile(String userNm) {
+    public void modifyProfile(String userNm, String userProfileImg) {
         if(userNm != null) this.userNm = userNm;
+        if(userProfileImg != null) this.userProfileImg = userProfileImg;
     }
 
     // 포인트 추가
     public void addPoint(int point) {
-        this.currentPoint = point;
+        this.currentPoint += point;
     }
+
     // 포인트 차감
     public void removePoint(int point) {
         if(this.currentPoint < point) {
             throw new CustomException(ErrorCode.INSUFFICIENT_POINTS);
         }
+        this.currentPoint -= point;
     }
 }

@@ -1,6 +1,5 @@
 package com.ssak.ssak.domain.Point;
 
-import com.ssak.ssak.domain.Point.dto.PointType;
 import com.ssak.ssak.domain.common.BaseEntity;
 import com.ssak.ssak.domain.coupon.CouponHist;
 import com.ssak.ssak.domain.user.User;

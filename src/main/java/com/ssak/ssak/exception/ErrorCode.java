@@ -24,6 +24,7 @@ public enum ErrorCode {
     INVALID_WD_REASON(HttpStatus.BAD_REQUEST, "A011", "존재하지 않는 사유입니다."),
     WD_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "A012", "사유 입력이 필요합니다."),
     LOGOUT_TOKEN(HttpStatus.BAD_REQUEST, "A013", "이미 로그아웃된 토큰입니다."),
+    VERIFICATION_TOKEN_NOT_FOUND(HttpStatus.BAD_REQUEST, "A014", "해당 계정에 대한 인증코드 발급 정보가 없습니다. 다시 전송해주세요."),
 
     // COUPON
     COUPON_NOT_FOUND(HttpStatus.BAD_REQUEST, "C001", "존재하지 않는 쿠폰입니다."),
@@ -32,7 +33,19 @@ public enum ErrorCode {
     RESTAURANT_NOT_FOUND(HttpStatus.BAD_REQUEST, "R001", "존재하지 않는 식당입니다."),
 
     // POINT
-    INSUFFICIENT_POINTS(HttpStatus.BAD_REQUEST, "P001", "보유 포인트가 부족합니다.");
+    INSUFFICIENT_POINTS(HttpStatus.BAD_REQUEST, "P001", "보유 포인트가 부족합니다."),
+
+    // COMMUNITY_POST
+    POST_NOT_FOUND(HttpStatus.BAD_REQUEST, "CP001", "해당 게시글을 찾을 수 없습니다."),
+
+    // COMMUNITY_COMMENT
+    COMMENT_NOT_FOUND(HttpStatus.BAD_REQUEST, "CC001", "해당 댓글을 찾을 수 없습니다."),
+
+    // S3
+    IMAGE_NOT_FOUND(HttpStatus.BAD_REQUEST, "S001", "이미지가 존재하지 않습니다."),
+    FILE_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S003", "이미지를 업로드하는 도중 에러가 발생하였습니다."),
+    IMAGE_DELETE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S002", "이미지를 삭제하는 도중 에러가 발생하였습니다.");
+
 
     private final HttpStatus httpStatus;
     private final String code;

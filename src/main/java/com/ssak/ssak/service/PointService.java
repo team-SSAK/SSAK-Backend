@@ -4,7 +4,7 @@ import com.ssak.ssak.domain.Point.PointHist;
 import com.ssak.ssak.domain.Point.PointHistRepository;
 import com.ssak.ssak.domain.Point.dto.PointCurrentResponse;
 import com.ssak.ssak.domain.Point.dto.PointHistResponse;
-import com.ssak.ssak.domain.Point.dto.PointType;
+import com.ssak.ssak.domain.Point.PointType;
 import com.ssak.ssak.domain.user.User;
 import com.ssak.ssak.domain.user.UserRepository;
 import com.ssak.ssak.exception.CustomException;

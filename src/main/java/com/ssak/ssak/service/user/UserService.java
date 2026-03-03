@@ -4,14 +4,19 @@ import com.ssak.ssak.domain.user.*;
 import com.ssak.ssak.domain.user.dto.*;
 import com.ssak.ssak.exception.CustomException;
 import com.ssak.ssak.exception.ErrorCode;
+import com.ssak.ssak.service.util.S3Service;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestBody;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -19,6 +24,7 @@ public class UserService {
     private final WithdrawalReasonMSTRRepository withdrawalReasonMSTRRepository;
     private final WithdrawalReasonHistRepository withdrawalReasonHistRepository;
     private final NotificationRepository notificationRepository;
+    private final S3Service s3Service;
 
     /**
      * 사용자 정보를 수정한다.
@@ -27,14 +33,27 @@ public class UserService {
      * @return
      */
     @Transactional
-    public UserResponse modifyUser(Long userId, UserModifyRequest request) {
+    public UserResponse modifyUser(Long userId, UserModifyRequest request) throws IOException {
+        log.info("수정 요청 - 닉네임: {}, 파일 존재 여부: {}",
+                request.getNickname(),
+                (request.getUserProfileImg() != null && !request.getUserProfileImg().isEmpty()));
+
         // 1. 사용자 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 2. 정보 수정
-        user.modifyProfile(request.getNickname());
+        // 2. 이미지 파일이 새로 들어온 경우, S3 로직 수행
+        String newImg = null;
+        if (request.getUserProfileImg() != null) {
+            s3Service.deleteExistingProfileImage(user.getUserProfileImg());
 
+            //새 파일 업로드
+            newImg = s3Service.uploadProfileImage(request.getUserProfileImg());
+        }
+
+        // 3. 정보 수정
+        System.out.println("이미지 이름: " + newImg);
+        user.modifyProfile(request.getNickname(), newImg);
         return UserResponse.from(user);
     }
 
@@ -62,10 +81,11 @@ public class UserService {
     @Transactional
     public void saveWithdrawalReason(WithdrawalReasonRequest request) {
         // 1. 선택한 사유 마스터 테이블에서 찾기
+        log.info(request.getSelectedWdReasonId());
         WithdrawalReasonMSTR wdReason = withdrawalReasonMSTRRepository.findById(Long.valueOf(request.getSelectedWdReasonId()))
                 .orElseThrow(() -> new CustomException((ErrorCode.INVALID_WD_REASON)));
         // 2. '기타' 사유인데 사유 입력이 안 되어 있는 경우
-        if (request.getReason() == null || request.getReason().isEmpty()) {
+        if (request.getSelectedWdReasonId().equals("1") && (request.getReason() == null || request.getReason().isEmpty())) {
             throw new CustomException(ErrorCode.WD_REASON_REQUIRED);
         }
 
@@ -97,8 +117,11 @@ public class UserService {
     @Transactional
     public NotificationResponse updateNotificationYN(Long userId, UpdateNotificationRequest request) {
         Notification noti = notificationRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        log.info("request 확인");
+        log.info(request.isEventNotiYn() + " " + request.isCommunityNotiYn() + " " + request.isNightNotiYn());
         noti.updateNotification(
-            request.isEventNotiYn(), request.isCommunityYn(), request.isNightYn()
+            request.isEventNotiYn(), request.isCommunityNotiYn(), request.isNightNotiYn()
         );
         return NotificationResponse.from(noti);
     }

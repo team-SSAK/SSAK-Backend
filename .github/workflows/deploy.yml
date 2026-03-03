@@ -29,7 +29,7 @@ jobs:
       # 4. Docker에 빌드
       - name: Build by Docker
         run: |
-          docker buildx build --platform linux/amd64 -t m2nsp/ssak-be:latest --load .
+          docker buildx build --platform linux/amd64 -t ${{ secrets.DOCKERHUB_USERNAME }}/seederslab-server:latest --load .
 
       # 5. DockerHub 로그인
       - name: Login to DockerHub
@@ -40,7 +40,7 @@ jobs:
 
       # 6. Push into DockerHub
       - name: Push into DockerHub
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/ssak-be:latest
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/seederslab-server:latest
 
       # 7. ec2 내에서 도커 이미지 풀 및 실행
       - name: SSH into EC2 and deploy container with Docker
@@ -55,13 +55,13 @@ jobs:
             docker rm seederslab-server || true
             
             # 최신 이미지 pull
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/ssak-be:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/seederslab-server:latest
             
             # 컨테이너 재시작
             docker run -d -p 8080:8080 \
             --name seederslab-server \
-            --env-file /.env \
-            ${{ secrets.DOCKERHUB_USERNAME }}/ssak-be:latest
+            --env-file ./.env \
+            ${{ secrets.DOCKERHUB_USERNAME }}/seederslab-server:latest
             
             # 사용하지 않는 이미지 정리
             docker image prune -f --filter "until=168h"

@@ -1,6 +1,7 @@
 package com.ssak.ssak.domain.Point.dto;
 
 import com.ssak.ssak.domain.Point.PointHist;
+import com.ssak.ssak.domain.Point.PointType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

@@ -17,7 +17,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/coupons/my")
+@RequestMapping("/api/coupons")
 @RequiredArgsConstructor
 public class CouponController {
     private final CouponService couponService;
@@ -28,7 +28,7 @@ public class CouponController {
      * @param option
      * @return
      */
-    @GetMapping
+    @GetMapping("/my")
     public ResponseEntity<List<CouponHistResponse>> getMyCouponList(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                                     @RequestParam CouponStatus option) {
         return ResponseEntity.ok(couponService.getMyCouponList(userDetails.getUserId(), option));
@@ -39,7 +39,7 @@ public class CouponController {
      * @param userDetails
      * @return
      */
-    @GetMapping("/wish")
+    @GetMapping("/my/wish")
     public ResponseEntity<List<CouponWishResponse>> getMyWishCouponList(@AuthenticationPrincipal CustomUserDetails userDetails) {
         return ResponseEntity.ok(couponService.getMyWishCouponList(userDetails.getUserId()));
     }
@@ -50,7 +50,7 @@ public class CouponController {
      * @param request
      * @return
      */
-    @PostMapping("/wish")
+    @PostMapping("/my/wish")
     public ResponseEntity<CouponWishActionResponse> updateCouponWishStatus(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                                            @RequestBody CouponWishRequest request) {
         return ResponseEntity.ok(couponService.updateCouponWishStatus(userDetails.getUserId(), request.getWishCouponId()));

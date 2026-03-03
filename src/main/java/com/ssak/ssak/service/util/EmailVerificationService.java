@@ -45,7 +45,10 @@ public class EmailVerificationService {
         String key = "verification:" + type.name() + ":" + email;
         String savedCode = redisTemplate.opsForValue().get(key);
 
-        if (savedCode == null || !savedCode.equals(code)) {
+        if (savedCode == null) {
+            log.warn("인증코드 미존재 - 이메일: {}", email);
+            throw new CustomException(ErrorCode.VERIFICATION_TOKEN_NOT_FOUND);
+        } else if(!savedCode.equals(code)) {
             log.warn("인증코드 불일치 - 이메일: {}", email);
             throw new CustomException(ErrorCode.EMAIL_VERIFICATION_INVALID);
         }

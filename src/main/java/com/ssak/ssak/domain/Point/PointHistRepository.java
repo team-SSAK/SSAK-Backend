@@ -1,7 +1,5 @@
 package com.ssak.ssak.domain.Point;
 
-import com.ssak.ssak.domain.Point.dto.PointHistResponse;
-import com.ssak.ssak.domain.Point.dto.PointType;
 import com.ssak.ssak.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
