@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateNotificationRequest {
     private boolean eventNotiYn;
-    private boolean communityYn;
-    private boolean nightYn;
+    private boolean communityNotiYn;
+    private boolean nightNotiYn;
 }

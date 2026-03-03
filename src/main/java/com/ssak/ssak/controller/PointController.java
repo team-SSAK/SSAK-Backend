@@ -2,7 +2,7 @@ package com.ssak.ssak.controller;
 
 import com.ssak.ssak.domain.Point.dto.PointCurrentResponse;
 import com.ssak.ssak.domain.Point.dto.PointHistResponse;
-import com.ssak.ssak.domain.Point.dto.PointType;
+import com.ssak.ssak.domain.Point.PointType;
 import com.ssak.ssak.security.CustomUserDetails;
 import com.ssak.ssak.service.PointService;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class PointController {
     private final PointService pointService;
 
     /**
-     * 로그인한 사용자의 포인트 리스트를 저장합니다.
+     * 로그인한 사용자의 포인트 히스토리를 반환합니다.
      * @param userDetails
      * @return
      */

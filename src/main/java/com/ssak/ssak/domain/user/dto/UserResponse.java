@@ -14,12 +14,14 @@ public class UserResponse {
     private String userEmail;
     private String userNm;
     private int userPoint;
+    private String userProfileImg;
 
     public static UserResponse from(User user) {
         return new UserResponse(
           user.getUserEmail(),
           user.getUserNm(),
-          user.getCurrentPoint()
+          user.getCurrentPoint(),
+          user.getUserProfileImg()
         );
     }
 }

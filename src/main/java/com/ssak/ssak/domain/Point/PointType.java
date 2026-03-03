@@ -1,4 +1,4 @@
-package com.ssak.ssak.domain.Point.dto;
+package com.ssak.ssak.domain.Point;
 
 public enum PointType {
     SAVE,  // 적립

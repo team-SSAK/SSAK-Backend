@@ -10,14 +10,14 @@ import lombok.Getter;
 @AllArgsConstructor
 public class NotificationResponse {
     private boolean eventNotiYn;
-    private boolean communityYn;
-    private boolean nightYn;
+    private boolean communityNotiYn;
+    private boolean nightNotiYn;
 
     public static NotificationResponse from(Notification notification) {
         return NotificationResponse.builder()
                 .eventNotiYn(notification.isEventNotiYn())
-                .communityYn(notification.isCommunityNotiYn())
-                .nightYn(notification.isNightNotiYn())
+                .communityNotiYn(notification.isCommunityNotiYn())
+                .nightNotiYn(notification.isNightNotiYn())
                 .build();
     }
 }
