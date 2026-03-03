@@ -5,7 +5,10 @@ spring:
     username: ${db.username}
     password: ${db.password}
     driver-class-name: com.mysql.cj.jdbc.Driver
-
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   jpa:
     hibernate:
       ddl-auto: update
@@ -95,9 +98,14 @@ jwt:
 spring.devtools.restart.enabled: false
 
 # S3 버킷 설정
-#aws:
-#  s3:
-#    bucket:
-#    region:
-#    access-key:
-#    secret-key:
+cloud:
+  aws:
+    s3:
+      bucket: ${aws.bucket-name}
+    region:
+      static: ap-northeast-2
+    credentials:
+      access-key: ${aws.access-key}
+      secret-key: ${aws.secret-key}
+    stack:
+      auto: false    # EC2에서 실행하지 않을 때 CloudFormation 관련 에러 방지
