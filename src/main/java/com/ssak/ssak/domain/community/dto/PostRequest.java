@@ -3,6 +3,7 @@ package com.ssak.ssak.domain.community.dto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -12,5 +13,5 @@ import java.util.List;
 public class PostRequest {
     private boolean postVisibility;
     private String postContent;
-    private List<String> imageUrls;
+    private List<MultipartFile> images;
 }

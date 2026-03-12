@@ -7,6 +7,7 @@ import com.ssak.ssak.domain.community.dto.PostRequest;
 import com.ssak.ssak.domain.community.dto.PostResponse;
 import com.ssak.ssak.exception.CustomException;
 import com.ssak.ssak.exception.ErrorCode;
+import com.ssak.ssak.service.util.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PostService {
     private final CommentRepository commentRepository;
+    private final S3Service s3Service;
     private PostRepository postRepository;
 
     /**
@@ -119,7 +121,14 @@ public class PostService {
      * @param request
      * @return
      */
-    public List<PostResponse> createPost(Long restId, PostRequest request, String userId) {
+    public PostResponse createPost(Long restId, PostRequest request, Long userId) {
+
+        // 1. 사진 저장
+        List<String> images = s3Service.uploadImages(request.getImages(), "post");
+
+        // 2. DB에 저장
+
+
         return null;
     }
 }

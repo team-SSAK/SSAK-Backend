@@ -4,6 +4,7 @@ import com.ssak.ssak.domain.restaurant.Restaurant;
 import com.ssak.ssak.domain.restaurant.RestaurantRepository;
 import com.ssak.ssak.domain.restaurant.RestaurantWish;
 import com.ssak.ssak.domain.restaurant.RestaurantWishRepository;
+import com.ssak.ssak.domain.restaurant.dto.RestaurantResponse;
 import com.ssak.ssak.domain.restaurant.dto.RestaurantWishActionResponse;
 import com.ssak.ssak.domain.restaurant.dto.RestaurantWishResponse;
 import com.ssak.ssak.domain.user.User;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,6 +26,23 @@ public class RestaurantService {
     private final RestaurantWishRepository restaurantWishRepository;
     private final UserRepository userRepository;
     private final RestaurantRepository restaurantRepository;
+
+    @Transactional(readOnly = true)
+    public List<RestaurantResponse> getRestaurantList(Long userId) {
+        List<Restaurant> restaurants = restaurantRepository.findAll();
+
+        // 2. 사용자가 찜한 식당 ID들만 조회
+        Set<Long> wishedRestaurantIds = restaurantWishRepository.findAllByUser_UserId(userId)
+                .stream()
+                .map(wish -> wish.getRestaurant().getRestaurantId())
+                .collect(Collectors.toSet());
+
+        // 3. 메모리에서 매핑
+        return restaurants.stream()
+                .map(r -> RestaurantResponse.from(r, wishedRestaurantIds.contains(r.getRestaurantId())))
+                .collect(Collectors.toList());
+    }
+
 
     /**
      * 로그인한 사용자가 찜한 식당 목록 조회
