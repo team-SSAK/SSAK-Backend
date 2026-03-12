@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 public class PostService {
     private final CommentRepository commentRepository;
     private final S3Service s3Service;
-    private PostRepository postRepository;
+    private final PostRepository postRepository;
 
     /**
      * 해당 식당에 해당하는 게시글을 모두 반환한다.
