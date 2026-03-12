@@ -14,7 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -48,11 +51,19 @@ public class S3Service {
      * 새 파일 업로드 후 저장된 URL 반환
      * @param file
      */
-    public String uploadProfileImage(MultipartFile file) {
+    public String uploadSingleImage(MultipartFile file, String fileType) {
 
-        String folderName = "profile_img/";
-//        String fileName = folderName + UUID.randomUUID() + "_" + file.getOriginalFilename();
-        String fileName = folderName + "_" + file.getOriginalFilename();
+        String folderName = null;
+
+        // 이미지 종류에 따른 폴더 분리
+        if(fileType == "profile") {
+            folderName = "profile_img/";
+        } else if (fileType == "post") {
+            folderName = "post_img/";
+        } else if (fileType == "restaurant") {
+            folderName = "restaurant_img/";
+        }
+        String fileName = folderName + "_" + UUID.randomUUID();
 
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(file.getSize());
@@ -70,5 +81,20 @@ public class S3Service {
             throw new CustomException(ErrorCode.FILE_UPLOAD_ERROR);
         }
         return amazonS3.getUrl(bucket, fileName).toString();
+    }
+
+    /**
+     * 여러 개의 파일을 업로드하고 URL 리스트를 반환한다.
+     */
+    public List<String> uploadImages(List<MultipartFile> files, String fileType) {
+        if (files == null || files.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return files.stream()
+                .map(file -> {
+                    return uploadSingleImage(file, fileType); // 기존 업로드 로직 호출
+                })
+                .collect(Collectors.toList());
     }
 }

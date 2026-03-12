@@ -48,7 +48,7 @@ public class UserService {
             s3Service.deleteExistingProfileImage(user.getUserProfileImg());
 
             //새 파일 업로드
-            newImg = s3Service.uploadProfileImage(request.getUserProfileImg());
+            newImg = s3Service.uploadSingleImage(request.getUserProfileImg(), "profile");
         }
 
         // 3. 정보 수정

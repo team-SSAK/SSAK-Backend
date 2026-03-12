@@ -39,8 +39,8 @@ public class PostController {
         return ResponseEntity.ok(postService.getPost(restId, postId));
     }
 
-//    @PostMapping("/{restId}")
-//    public ResponseEntity<PostResponse> createPost(@PathVariable Long restId, @RequestBody PostRequest postRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
-//        return ResponseEntity.ok(postService.createPost(restId, postRequest, userDetails.getUserId()));
-//    }
+    @PostMapping("/{restId}")
+    public ResponseEntity<PostResponse> createPost(@PathVariable Long restId, @RequestBody PostRequest postRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(postService.createPost(restId, postRequest, userDetails.getUserId()));
+    }
 }
