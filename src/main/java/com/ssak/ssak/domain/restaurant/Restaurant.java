@@ -33,5 +33,5 @@ public class Restaurant extends BaseEntity {
     private String restaurantImgUrl;
 
     @Column(name = "REST_TYPE")
-    private RestaurantType restaurantType;
+    private RestaurantType restaurantType=RestaurantType.UNKNOWN;
 }

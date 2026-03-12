@@ -1,6 +1,7 @@
 package com.ssak.ssak.domain.restaurant.dto;
 
 import com.ssak.ssak.domain.restaurant.Restaurant;
+import com.ssak.ssak.domain.restaurant.RestaurantType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +16,7 @@ public class RestaurantResponse {
     private String restaurantName;
     private String restaurantLocation;
     private String restaurantImgUrl;
+    private RestaurantType restaurantType;
     private boolean isWished;
 
     public static RestaurantResponse from(Restaurant restaurant, boolean isWished) {
@@ -23,6 +25,7 @@ public class RestaurantResponse {
                 .restaurantName(restaurant.getRestaurantName())
                 .restaurantLocation(restaurant.getRestaurantLocation())
                 .restaurantImgUrl(restaurant.getRestaurantImgUrl())
+                .restaurantType(restaurant.getRestaurantType())
                 .isWished(isWished)
                 .build();
     }
