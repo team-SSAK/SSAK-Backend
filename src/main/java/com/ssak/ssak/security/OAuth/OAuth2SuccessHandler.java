@@ -59,7 +59,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 .secure(true)      // https환경은 true
                 .path("/")
                 .maxAge(refreshExpiration/1000) // 초단위 설정
-                .sameSite("Lax")
+                .sameSite("None")  // Cross-Site 허용
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());
 
