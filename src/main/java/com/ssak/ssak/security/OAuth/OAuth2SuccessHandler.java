@@ -27,6 +27,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
 
+    @Value("${frontend-url}")
+    private String frontendUrl;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
@@ -61,7 +64,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         response.addHeader("Set-Cookie", cookie.toString());
 
         // 5. 프론트엔드 리다이렉트
-        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:8081")
+        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl)
                 .queryParam("token", accessToken)
                 .build()
                 .encode()

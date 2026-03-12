@@ -4,20 +4,23 @@ import com.ssak.ssak.domain.common.BaseEntity;
 import com.ssak.ssak.domain.restaurant.Restaurant;
 import com.ssak.ssak.domain.user.User;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Post extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "POST_ID")
     private Long postId;
+
+    @Column(name = "POST_TITLE")
+    private String postTitle;
 
     @Column(name = "POST_CONTENT")
     private String postContent;
@@ -39,9 +42,17 @@ public class Post extends BaseEntity {
     @JoinColumn(name = "REST_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_POST_RESTAURANT"))
     private Restaurant restaurant;
 
-    @OneToMany(mappedBy = "post")
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostPhoto> postPhotos;
 
     @OneToMany(mappedBy = "post")
     private List<Comment> comments;
+
+    public void addComment() {
+        postCommentCnt++;
+    }
+
+    public void deleteComment() {
+        postCommentCnt--;
+    }
 }

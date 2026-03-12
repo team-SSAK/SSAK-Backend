@@ -1,10 +1,11 @@
 package com.ssak.ssak.service;
 
 import com.ssak.ssak.domain.community.*;
-import com.ssak.ssak.domain.community.dto.CommentResponse;
-import com.ssak.ssak.domain.community.dto.PostListResponse;
-import com.ssak.ssak.domain.community.dto.PostRequest;
-import com.ssak.ssak.domain.community.dto.PostResponse;
+import com.ssak.ssak.domain.community.dto.*;
+import com.ssak.ssak.domain.restaurant.Restaurant;
+import com.ssak.ssak.domain.restaurant.RestaurantRepository;
+import com.ssak.ssak.domain.user.User;
+import com.ssak.ssak.domain.user.UserRepository;
 import com.ssak.ssak.exception.CustomException;
 import com.ssak.ssak.exception.ErrorCode;
 import com.ssak.ssak.service.util.S3Service;
@@ -24,6 +25,9 @@ public class PostService {
     private final CommentRepository commentRepository;
     private final S3Service s3Service;
     private final PostRepository postRepository;
+    private final RestaurantRepository restaurantRepository;
+    private final UserRepository userRepository;
+    private final PostPhotoRepository postPhotoRepository;
 
     /**
      * 해당 식당에 해당하는 게시글을 모두 반환한다.
@@ -41,12 +45,11 @@ public class PostService {
 
     /**
      * 특정 게시물의 내용을 반환한다.
-     * @param restId
      * @param postId
      * @return
      */
     @Transactional(readOnly = true)
-    public PostResponse getPost(Long restId, Long postId) {
+    public PostResponse getPost(Long postId) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
         // 게시글 이미지 불러오기
@@ -60,17 +63,7 @@ public class PostService {
         List<CommentResponse> commentTree = convertToDto(comments);
 
         // dto생성
-        return PostResponse.builder()
-                .postId(post.getPostId())
-                .postContent(post.getPostContent())
-                .postVisibility(post.isPostVisibility())
-                .postCommentCnt(post.getPostCommentCnt())
-                .postLikeCnt(post.getPostLikeCnt())
-                .nickname(post.getUser().getUserNm())
-                .postCreateTime(post.getCreatedAt())
-                .comments(commentTree) // 조립된 트리 삽입!
-                .imageUrls(postPhotos)
-                .build();
+        return PostResponse.from(post, postPhotos, commentTree);
     }
 
     /**
@@ -79,40 +72,10 @@ public class PostService {
      * @return
      */
     public List<CommentResponse> convertToDto(List<Comment> comments) {
-        // 1. 반환할 부모 댓글 리스트
-        List<CommentResponse> result = new ArrayList<>();
-
-        // 2. 부모-자식 관계 매핑을 위한 temp (Map)
-        Map<Long, CommentResponse> map = new HashMap<>();
-
-        // 3. 먼저 모든 댓글을 DTO로 반환해서 Map에 넣음
-        comments.forEach(comment -> {
-            CommentResponse dto = CommentResponse.builder()
-                    .commentId(comment.getCommentId())
-                    .commentContent(comment.getCommentContent())
-                    .nickname(comment.getUser().getUserNm())
-                    .commentCreateTime(comment.getCreatedAt())
-                    .childrenComments(new ArrayList<>())
-                    .build();
-            map.put(comment.getCommentId(), dto);
-        });
-
-        // 4. 이제 하나씩 꺼내서 부모가 있으면 부모의 children에 넣고, 없으면 result에 넣음
-        comments.forEach(comment -> {
-            CommentResponse dto = map.get(comment.getCommentId());
-
-            if(comment.getParent() != null) {
-                // 대댓글인 경우: 부모 DTO를 찾아 그 안의 children 리스트에 나를 추가
-                CommentResponse parentDto = map.get(comment.getParent().getCommentId());
-                if (parentDto != null) {
-                    parentDto.getChildrenComments().add(dto);
-                }
-            } else {
-                // 최상위 댓글인 경우: 결과 리스트에 직접 추가
-                result.add(dto);
-            }
-        });
-        return result;
+        return comments.stream()
+                .filter(comment -> comment.getParent() == null) // 최상위 부모 댓글만 필터링
+                .map(CommentResponse::from) // 여기서 재귀적으로 자식들까지 다 변환됨
+                .toList();
     }
 
 
@@ -121,14 +84,117 @@ public class PostService {
      * @param request
      * @return
      */
+    @Transactional
     public PostResponse createPost(Long restId, PostRequest request, Long userId) {
 
-        // 1. 사진 저장
-        List<String> images = s3Service.uploadImages(request.getImages(), "post");
+        // 1. DB에 저장
+        Restaurant restaurant = restaurantRepository.findById(restId).orElseThrow(() -> new CustomException(ErrorCode.RESTAURANT_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        // 2. DB에 저장
+        Post post = Post.builder()
+                .postTitle(request.getPostTitle())
+                .postContent(request.getPostContent())
+                .restaurant(restaurant)
+                .user(user)
+                .build();
 
+        Post savedPost = postRepository.save(post);
 
-        return null;
+        // 2. S3에 사진 업로드
+        List<String> images = new ArrayList<>();
+        if (request.getImages() != null && !request.getImages().isEmpty()) {
+            images = s3Service.uploadImages(request.getImages(), "post");
+
+            // 3. PostPhoto(DB)에 사진 저장
+            List<PostPhoto> postPhotos = images.stream()
+                    .map(url -> PostPhoto.builder()
+                            .post(savedPost)
+                            .postPhotoUrl(url)
+                            .build())
+                    .toList();
+
+            postPhotoRepository.saveAll(postPhotos);
+        }
+        List<CommentResponse> comments = new ArrayList<>();
+
+        return PostResponse.from(savedPost, images, comments);
+    }
+
+    /**
+     * 해당 식당의 커뮤니티의 특정 게시글에 댓글을 작성한다.
+     * @param postId
+     * @return
+     */
+    @Transactional
+    public String createComment(Long postId, CommentRequest request, Long userId) {
+        // 1. 조회
+        Post post = postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 2. 대댓글 여부 확인
+        Comment parentComment = null;
+        if(request.getParentId() != null) {
+            parentComment = commentRepository.findById(request.getParentId()).orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+        }
+
+        // 3. 댓글 생성
+        Comment comment = Comment.builder()
+                .commentContent(request.getCommentContent())
+                .user(user)
+                .post(post)
+                .parent(parentComment)
+                .build();
+
+        commentRepository.save(comment);
+
+        // 4. post의 댓글 갯수 1개 증가
+        post.addComment();
+
+        return "댓글이 성공적으로 작성되었습니다.";
+    }
+
+    /**
+     * 자신이 작성한 게시물을 삭제한다.
+     * @param postId
+     * @param userId
+     * @return
+     */
+    @Transactional
+    public String deletePost(Long postId, Long userId) {
+        //TODO: cascade 확인하기 - post-comment
+
+        Post post = postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if(!post.getUser().equals(user)) {
+            throw new CustomException(ErrorCode.NOT_POST_OWNER);
+        }
+
+        postRepository.delete(post);
+        return "게시글이 성공적으로 삭제되었습니다.";
+    }
+
+    /**
+     * 자신이 작성한 댓글을 삭제한다.
+     * @param commentId
+     * @param userId
+     * @return
+     */
+    @Transactional
+    public String deleteComment(Long commentId, Long userId) {
+        //TODO: 그 밑에 댓글이 달린 댓글이 삭제될경우
+
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if(!comment.getPost().getUser().equals(user)) {
+            throw new CustomException(ErrorCode.NOT_COMMENT_OWNER);
+        }
+        commentRepository.delete(comment);
+
+        Post post = comment.getPost();
+        post.deleteComment();
+
+        return "댓글이 성공적으로 삭제되었습니다.";
     }
 }

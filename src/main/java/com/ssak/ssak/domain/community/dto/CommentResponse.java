@@ -29,7 +29,9 @@ public class CommentResponse {
                 .commentContent(comment.getCommentContent())
                 .nickname(comment.getUser().getUserNm())
                 .commentCreateTime(comment.getCreatedAt())
-                .childrenComments(new ArrayList<>()) //초기화
+                .childrenComments(comment.getChildren().stream()
+                        .map(CommentResponse::from)
+                        .toList())
                 .build();
     }
 }
