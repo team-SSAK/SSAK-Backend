@@ -12,6 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 public class PostRequest {
     private boolean postVisibility;
+    private String postTitle;
     private String postContent;
     private List<MultipartFile> images;
 }

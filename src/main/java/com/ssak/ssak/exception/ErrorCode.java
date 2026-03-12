@@ -37,9 +37,11 @@ public enum ErrorCode {
 
     // COMMUNITY_POST
     POST_NOT_FOUND(HttpStatus.BAD_REQUEST, "CP001", "해당 게시글을 찾을 수 없습니다."),
+    NOT_POST_OWNER(HttpStatus.BAD_REQUEST, "CP002", "본인이 작성한 게시물만 삭제할 수 있습니다."),
 
     // COMMUNITY_COMMENT
     COMMENT_NOT_FOUND(HttpStatus.BAD_REQUEST, "CC001", "해당 댓글을 찾을 수 없습니다."),
+    NOT_COMMENT_OWNER(HttpStatus.BAD_REQUEST, "CC002", "본인이 작성한 댓글만 삭제할 수 있습니다."),
 
     // S3
     IMAGE_NOT_FOUND(HttpStatus.BAD_REQUEST, "S001", "이미지가 존재하지 않습니다."),
