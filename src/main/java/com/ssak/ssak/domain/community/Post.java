@@ -26,7 +26,7 @@ public class Post extends BaseEntity {
     private String postContent;
 
     @Column(name = "POST_VISIBILITY")
-    private boolean postVisibility;
+    private Boolean postVisibility = true;
 
     @Column(name = "POST_LIKE_CNT")
     private int postLikeCnt = 0;
@@ -45,8 +45,11 @@ public class Post extends BaseEntity {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostPhoto> postPhotos;
 
-    @OneToMany(mappedBy = "post")
+    @OneToMany(mappedBy = "post",  cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PostLike> postWishes;
 
     public void addComment() {
         postCommentCnt++;
@@ -54,5 +57,19 @@ public class Post extends BaseEntity {
 
     public void deleteComment() {
         postCommentCnt--;
+    }
+
+    public void addLiked() {
+        postLikeCnt++;
+    }
+
+    public void deleteLiked() {
+        postLikeCnt--;
+    }
+
+    public void editPost(String postTitle, String postContent, Boolean postVisibility) {
+        if(postTitle != null) this.postTitle = postTitle;
+        if(postContent != null) this.postContent = postContent;
+        if(postVisibility != null) this.postVisibility = postVisibility;
     }
 }

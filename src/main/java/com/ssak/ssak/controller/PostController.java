@@ -1,12 +1,11 @@
 package com.ssak.ssak.controller;
 
-import com.ssak.ssak.domain.community.dto.CommentRequest;
-import com.ssak.ssak.domain.community.dto.PostListResponse;
-import com.ssak.ssak.domain.community.dto.PostRequest;
-import com.ssak.ssak.domain.community.dto.PostResponse;
+import com.ssak.ssak.domain.community.dto.*;
+import com.ssak.ssak.domain.util.dto.ReportRequest;
 import com.ssak.ssak.security.CustomUserDetails;
 import com.ssak.ssak.service.PostService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -46,9 +45,32 @@ public class PostController {
      * @param userDetails
      * @return
      */
-    @PostMapping("/{restId}")
-    public ResponseEntity<PostResponse> createPost(@PathVariable Long restId, @RequestBody PostRequest postRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
+    @PostMapping(value = "/{restId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PostResponse> createPost(@PathVariable Long restId, @ModelAttribute PostRequest postRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
         return ResponseEntity.ok(postService.createPost(restId, postRequest, userDetails.getUserId()));
+    }
+
+    /**
+     * 해당 게시글을 수정한다
+     * @param postId
+     * @param postEditRequest
+     * @param userDetails
+     * @return
+     */
+    @PatchMapping(value = "/post/{postId}", consumes =  MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PostListResponse> editPost(@PathVariable Long postId, @ModelAttribute PostEditRequest postEditRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(postService.editPost(postId, postEditRequest, userDetails.getUserId()));
+    }
+
+    /**
+     * 특정 게시글을 좋아요 등록/취소 한다.
+     * @param postLikeRequest
+     * @param userDetails
+     * @return
+     */
+    @PostMapping("/post/wish")
+    public ResponseEntity<PostLikeResponse> likePost(@RequestBody PostLikeRequest postLikeRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(postService.likePost(postLikeRequest.getLikedPostId(), userDetails.getUserId()));
     }
 
     /**
@@ -72,6 +94,17 @@ public class PostController {
         return ResponseEntity.ok(postService.deletePost(postId, userDetails.getUserId()));
     }
 
+    /**
+     * 자신이 작성한 댓글 내용을 수정한다.
+     * @param commentId
+     * @param request
+     * @param userDetails
+     * @return
+     */
+    @PatchMapping("/comment/{commentId}")
+    public ResponseEntity<CommentResponse> editComment(@PathVariable Long commentId, @RequestBody CommentEditRequest request, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(postService.editComment(commentId, request, userDetails.getUserId()));
+    }
 
     /**
      * 자신이 작성한 댓글을 삭제한다.
@@ -82,5 +115,17 @@ public class PostController {
     @DeleteMapping("/comment/{commentId}")
     public ResponseEntity<String> deleteComment(@PathVariable Long commentId, @AuthenticationPrincipal CustomUserDetails userDetails) {
         return ResponseEntity.ok(postService.deleteComment(commentId, userDetails.getUserId()));
+    }
+
+    /**
+     * 특정 게시글을 신고한다.
+     * @param postId
+     * @param request
+     * @param userDetails
+     * @return
+     */
+    @PostMapping("/post/{postId}/report")
+    public ResponseEntity<String> reportPost(@PathVariable Long postId, @RequestBody ReportRequest request, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(postService.reportPost(postId, request, userDetails.getUserId()));
     }
 }

@@ -44,6 +44,7 @@ public class S3Service {
             amazonS3.deleteObject(bucket, fileName);
         } catch(Exception e) {
             log.error("S3 파일 삭제 실패: {}", e.getMessage());
+            throw new CustomException(ErrorCode.IMAGE_DELETE_ERROR);
         }
     }
 

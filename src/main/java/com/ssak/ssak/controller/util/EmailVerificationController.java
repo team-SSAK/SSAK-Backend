@@ -28,7 +28,11 @@ public class EmailVerificationController {
     private final EmailVerificationService emailVerificationService;
     private final UserRepository userRepository;
 
-    // 인증 코드 발송
+    /**
+     * 인증 코드를 발송합니다.
+     * @param request
+     * @return
+     */
     @PostMapping("/send")
     public ResponseEntity<?> sendCode(@RequestBody @Valid EmailVerificationRequest request) {
         try {
@@ -56,24 +60,26 @@ public class EmailVerificationController {
                     request.getType()
             );
             return ResponseEntity.ok("인증코드가 발송되었습니다.");
+        } catch (CustomException e) {
+            throw e;
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new CustomException(ErrorCode.EMAIL_NOT_SENT);
         }
     }
 
-    // 인증 코드 검증
+    /**
+     * 인증코드를 검증합니다.
+     * @param request
+     * @return
+     */
     @PostMapping("/verify")
     public ResponseEntity<?> verifyCode(@RequestBody CodeVerificationRequest request) {
-        boolean isValid = emailVerificationService.verifyCode(
+        emailVerificationService.verifyCode(
                 request.getEmail(),
                 request.getCode(),
                 request.getType()
         );
-
-        if (isValid) {
-            return ResponseEntity.ok("인증 성공");
-        }
-        throw new CustomException(ErrorCode.EMAIL_VERIFICATION_INVALID);
+        return ResponseEntity.ok("인증 성공");
     }
 }

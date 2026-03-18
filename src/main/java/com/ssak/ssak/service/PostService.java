@@ -6,17 +6,21 @@ import com.ssak.ssak.domain.restaurant.Restaurant;
 import com.ssak.ssak.domain.restaurant.RestaurantRepository;
 import com.ssak.ssak.domain.user.User;
 import com.ssak.ssak.domain.user.UserRepository;
+import com.ssak.ssak.domain.util.Report;
+import com.ssak.ssak.domain.util.ReportRepository;
+import com.ssak.ssak.domain.util.ReportType;
+import com.ssak.ssak.domain.util.dto.ReportRequest;
 import com.ssak.ssak.exception.CustomException;
 import com.ssak.ssak.exception.ErrorCode;
 import com.ssak.ssak.service.util.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.tool.schema.TargetType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,6 +32,8 @@ public class PostService {
     private final RestaurantRepository restaurantRepository;
     private final UserRepository userRepository;
     private final PostPhotoRepository postPhotoRepository;
+    private final PostLikeRepository postLikeRepository;
+    private final ReportRepository reportRepository;
 
     /**
      * 해당 식당에 해당하는 게시글을 모두 반환한다.
@@ -121,6 +127,85 @@ public class PostService {
     }
 
     /**
+     * 작성한 게시글을 수정한다.
+     * @param postId
+     * @param request
+     * @param userId
+     * @return
+     */
+    @Transactional
+    public PostListResponse editPost(Long postId, PostEditRequest request, Long userId) {
+
+        // 1. 기존의 post 찾기
+        Post post =  postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+
+        if (!post.getUser().getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.NOT_POST_OWNER);
+        }
+
+        // 2. 변경사항 저장
+        post.editPost(request.getPostTitle(), request.getPostContent(), request.getPostVisibility());
+
+        // 3. 이미지 변경사항 있을 경우
+            // 삭제
+        if (request.getDeleteImageIds() != null && !request.getDeleteImageIds().isEmpty()) {
+
+            List<PostPhoto> photos = postPhotoRepository.findAllByPostPhotoIdInAndPostPostId(request.getDeleteImageIds(), post.getPostId());
+
+            if (photos.size() != request.getDeleteImageIds().size()) {
+                throw new CustomException(ErrorCode.IMAGE_NOT_FOUND);
+            }
+
+            for (PostPhoto photo : photos) {
+                s3Service.deleteExistingProfileImage(photo.getPostPhotoUrl());
+            }
+            postPhotoRepository.deleteAll(photos);
+
+        }
+            // 추가
+        if(request.getNewImages() != null && !request.getNewImages().isEmpty()) {
+            List<String> images = s3Service.uploadImages(request.getNewImages(), "post");
+
+            // 3. PostPhoto(DB)에 사진 저장
+            List<PostPhoto> newPostPhotos = images.stream()
+                    .map(url -> PostPhoto.builder()
+                            .post(post)
+                            .postPhotoUrl(url)
+                            .build())
+                    .toList();
+
+            postPhotoRepository.saveAll(newPostPhotos);
+        }
+
+        return PostListResponse.from(post);
+    }
+
+    /**
+     * 특정 게시물에 대한 좋아요를 등록/취소한다.
+     * @param postId
+     * @param userId
+     * @return
+     */
+    @Transactional
+    public PostLikeResponse likePost(Long postId, Long userId) {
+        // 1. 기존에 좋아요 내역이 있는 Post인지 조회
+        Post post = postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        Optional<PostLike> postLike = postLikeRepository.findByUser_UserIdAndPost_PostId(userId, postId);
+
+        // 2. 찜 내역이 존재한다면, 찜 취소
+        if (postLike.isPresent()) {
+            postLikeRepository.delete(postLike.get());
+            post.deleteLiked();
+            return new PostLikeResponse(false, postId);
+        } else {
+            User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            postLikeRepository.save(PostLike.createPostLike(user, post));
+            post.addLiked();
+            return new PostLikeResponse(true, postId);
+        }
+    }
+
+    /**
      * 해당 식당의 커뮤니티의 특정 게시글에 댓글을 작성한다.
      * @param postId
      * @return
@@ -175,6 +260,26 @@ public class PostService {
     }
 
     /**
+     * 자신이 작성한 댓글 내용을 수정한다.
+     * @param commentId
+     * @param request
+     * @param userId
+     * @return
+     */
+    @Transactional
+    public CommentResponse editComment(Long commentId, CommentEditRequest request, Long userId) {
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if(!comment.getUser().equals(user)) {
+            throw new CustomException(ErrorCode.NOT_COMMENT_OWNER);
+        }
+
+        comment.editComment(request.getCommentContent());
+        return CommentResponse.from(comment);
+    }
+
+    /**
      * 자신이 작성한 댓글을 삭제한다.
      * @param commentId
      * @param userId
@@ -196,5 +301,30 @@ public class PostService {
         post.deleteComment();
 
         return "댓글이 성공적으로 삭제되었습니다.";
+    }
+
+    /**
+     * 특정 게시물을 신고한다.
+     * @param postId
+     * @param request
+     * @param userId
+     * @return
+     */
+    public String reportPost(Long postId, ReportRequest request, Long userId) {
+        Post post =  postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        //TODO: 중복신고 방지?
+
+        Report report = Report.builder()
+                .reporterId(userId)
+                .reportContent(request.getReportContent())
+                .targetId(postId)
+                .targetType(ReportType.POST)
+                .build();
+        reportRepository.save(report);
+
+        // TODO : 신고 들어온 게시글 바로 안보이게? - 누적되면 숨김?
+        return "신고가 정상적으로 접수되었습니다.";
     }
 }

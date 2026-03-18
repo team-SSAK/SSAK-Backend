@@ -1,12 +1,7 @@
 package com.ssak.ssak.service;
 
-import com.ssak.ssak.domain.restaurant.Restaurant;
-import com.ssak.ssak.domain.restaurant.RestaurantRepository;
-import com.ssak.ssak.domain.restaurant.RestaurantWish;
-import com.ssak.ssak.domain.restaurant.RestaurantWishRepository;
-import com.ssak.ssak.domain.restaurant.dto.RestaurantResponse;
-import com.ssak.ssak.domain.restaurant.dto.RestaurantWishActionResponse;
-import com.ssak.ssak.domain.restaurant.dto.RestaurantWishResponse;
+import com.ssak.ssak.domain.restaurant.*;
+import com.ssak.ssak.domain.restaurant.dto.*;
 import com.ssak.ssak.domain.user.User;
 import com.ssak.ssak.domain.user.UserRepository;
 import com.ssak.ssak.exception.CustomException;
@@ -15,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -26,9 +22,10 @@ public class RestaurantService {
     private final RestaurantWishRepository restaurantWishRepository;
     private final UserRepository userRepository;
     private final RestaurantRepository restaurantRepository;
+    private final MenuRepository menuRepository;
 
     @Transactional(readOnly = true)
-    public List<RestaurantResponse> getRestaurantList(Long userId) {
+    public List<RestaurantListResponse> getRestaurantList(Long userId) {
         List<Restaurant> restaurants = restaurantRepository.findAll();
 
         // 2. 사용자가 찜한 식당 ID들만 조회
@@ -39,8 +36,20 @@ public class RestaurantService {
 
         // 3. 메모리에서 매핑
         return restaurants.stream()
-                .map(r -> RestaurantResponse.from(r, wishedRestaurantIds.contains(r.getRestaurantId())))
+                .map(r -> RestaurantListResponse.from(r, wishedRestaurantIds.contains(r.getRestaurantId())))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 특정 식당 정보를 조회한다.
+     * @param restId
+     * @return
+     */
+    @Transactional(readOnly = true)
+    public RestaurantResponse getRestaurantDetail(Long restId) {
+        Restaurant restaurant = restaurantRepository.findById(restId).orElseThrow(() -> new CustomException(ErrorCode.RESTAURANT_NOT_FOUND));
+
+        return RestaurantResponse.from(restaurant);
     }
 
 
@@ -79,5 +88,30 @@ public class RestaurantService {
             restaurantWishRepository.save(RestaurantWish.createRestaurantWish(user, restaurant));
             return new RestaurantWishActionResponse(true, restaurantId);
         }
+    }
+
+    /**
+     * 해당 식당의 오늘의 메뉴를 조회합니다.
+     * @param restId
+     * @return
+     */
+    public List<MenuResponse> getTodayMenu(Long restId) {
+        Restaurant restaurant = restaurantRepository.findById(restId).orElseThrow(() -> new CustomException(ErrorCode.RESTAURANT_NOT_FOUND));
+
+        // 1. 오늘의 날짜를 계산
+        LocalDate today = LocalDate.now();
+
+        // 2. 오늘에 해당하는 메뉴 찾기
+        List<Menu> todayMenu = menuRepository.findAllByRestaurantAndMenuDate(restaurant, today);
+
+        // 3. 반환  // TODO - N+1문제 없는지 확인필요
+        return todayMenu.stream()
+                .map(menu -> MenuResponse.builder()
+                        .menuId(menu.getMenuId())
+                        .menuType(menu.getMenuType())
+                        .menuItems(menu.getMenuItems().stream().map(MenuItem::getMenuItemNm)
+                                .collect(Collectors.toList()))
+                        .build())
+                .collect(Collectors.toList());
     }
 }

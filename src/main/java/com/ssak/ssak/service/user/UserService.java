@@ -52,7 +52,6 @@ public class UserService {
         }
 
         // 3. 정보 수정
-        System.out.println("이미지 이름: " + newImg);
         user.modifyProfile(request.getNickname(), newImg);
         return UserResponse.from(user);
     }
