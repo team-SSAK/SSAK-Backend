@@ -34,17 +34,11 @@ public class AuthController {
     /**
      * 액세스 토큰을 재발급합니다.
      * @param refreshToken
-     * @param response
      * @return
      */
     @PostMapping("/reissue")
-    public ResponseEntity<TokenResponse> reissueToken(@CookieValue(name = "refreshToken", required = false) String refreshToken,
-                                                      HttpServletResponse response) {
-        // 쿠키가 존재하지 않는 경우
-        if (refreshToken == null) {
-            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
-        }
-        return ResponseEntity.ok(authService.reissue(refreshToken, response));
+    public ResponseEntity<TokenResponse> reissueToken(@RequestHeader("Refresh-Token") String refreshToken) {
+        return ResponseEntity.ok(authService.reissue(refreshToken));
     }
 
     /**
@@ -78,9 +72,24 @@ public class AuthController {
         return ResponseEntity.ok(authService.logout(request, response));
     }
 
-    //TODO: 회원탈퇴
+    /**
+     * 회원탈퇴를 수행합니다.
+     * @param request
+     * @param response
+     * @return
+     */
     @PostMapping("/withdrawal")
     public ResponseEntity<String> withdrawal(HttpServletRequest request, HttpServletResponse response) {
         return ResponseEntity.ok(authService.withdrawal(request, response));
+    }
+
+    /**
+     * 소셜 로그인 oauth2 과정에서 code -> token 변환
+     * @param request
+     * @return
+     */
+    @PostMapping("/token")
+    public ResponseEntity<TokenResponse> exchangeToken(@RequestBody TokenRequest request) {
+        return ResponseEntity.ok(authService.exchangeToken(request));
     }
 }

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -41,33 +42,20 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         System.out.println("OAuth2 로그인 성공");
 
-        // 2. JWT 토큰 생성
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getUserEmail());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUserEmail());
+        // 2. 임시 인증 코드 생성 (UUID) 및 redis에 저장
+        String tempCode = UUID.randomUUID().toString();
 
-        // 3. Redis에 리프레시 토큰 저장
         redisTemplate.opsForValue().set(
-                "RT:" + user.getUserEmail(),
-                refreshToken,
-                refreshExpiration,
-                TimeUnit.MILLISECONDS
+                "OAUTH_CODE:" + tempCode,
+                user.getUserEmail(),
+                1,
+                TimeUnit.MINUTES
         );
 
-        // 4. Refresh Token을 HttpOnly 쿠키에 담기
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
-                .httpOnly(true)
-                .secure(true)      // https환경은 true
-                .path("/")
-                .maxAge(refreshExpiration/1000) // 초단위 설정
-                .sameSite("None")  // Cross-Site 허용
-                .build();
-        response.addHeader("Set-Cookie", cookie.toString());
-
-        // 5. 프론트엔드 리다이렉트
+        // 3. 프론트엔드로 임시 코드 전달
         String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl)
-                .queryParam("token", accessToken)
+                .queryParam("code", tempCode)
                 .build()
-                .encode()
                 .toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);

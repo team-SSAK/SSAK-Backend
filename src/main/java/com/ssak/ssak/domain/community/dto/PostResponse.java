@@ -29,7 +29,7 @@ public class PostResponse {
     public static PostResponse from(Post post, List<String> imageUrls, List<CommentResponse> comments) {
         return PostResponse.builder()
                 .postId(post.getPostId())
-                .postVisibility(post.isPostVisibility())
+                .postVisibility(post.getPostVisibility())
                 .postTitle(post.getPostTitle())
                 .postContent(post.getPostContent())
                 .postCreateTime(post.getCreatedAt())

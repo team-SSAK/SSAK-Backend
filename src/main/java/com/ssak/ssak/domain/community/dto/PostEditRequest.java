@@ -10,9 +10,11 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class PostRequest {
-    private Boolean postVisibility;
+public class PostEditRequest {
     private String postTitle;
     private String postContent;
-    private List<MultipartFile> images;
+    private Boolean postVisibility;
+
+    private List<Long> deleteImageIds;          // 삭제 필요한 이미지 ID
+    private List<MultipartFile> newImages;      // 새로운 이미지 ID
 }

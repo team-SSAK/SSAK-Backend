@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.locationtech.jts.geom.Point;
 
 import java.time.LocalTime;
 
@@ -32,6 +33,11 @@ public class Restaurant extends BaseEntity {
     @Column(name = "REST_IMG")
     private String restaurantImgUrl;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "REST_TYPE")
     private RestaurantType restaurantType=RestaurantType.UNKNOWN;
+
+    @Column(name = "REST_COORD", columnDefinition = "POINT SRID 4326")
+    private Point restaurantCoord;
+
 }

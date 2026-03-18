@@ -37,4 +37,8 @@ public class Comment extends BaseEntity {
     //게시글 삭제 시 자식 모두 삭제하기 위해서 사용
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<Comment> children = new ArrayList<>();         // 자식 댓글들
+
+    public void editComment(String commentContent) {
+        this.commentContent = commentContent;
+    }
 }

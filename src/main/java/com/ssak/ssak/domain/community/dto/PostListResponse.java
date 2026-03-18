@@ -14,8 +14,9 @@ import java.time.LocalDateTime;
 @Builder
 public class PostListResponse {
     private Long postId;
+    private String postTitle;
     private String postContent;
-    private boolean postVisibility;
+    private Boolean postVisibility;
     private String nickname;
     private LocalDateTime postCreateTime;
     private int postLikeCnt;
@@ -24,8 +25,9 @@ public class PostListResponse {
     public static PostListResponse from(Post post) {
         return PostListResponse.builder()
                 .postId(post.getPostId())
+                .postTitle(post.getPostTitle())
                 .postContent(post.getPostContent())
-                .postVisibility(post.isPostVisibility())
+                .postVisibility(post.getPostVisibility())
                 .nickname(post.getUser().getUserNm())
                 .postCreateTime(post.getCreatedAt())
                 .postLikeCnt(post.getPostLikeCnt())

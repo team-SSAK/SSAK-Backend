@@ -1,37 +1,29 @@
 package com.ssak.ssak.domain.restaurant.dto;
 
 import com.ssak.ssak.domain.restaurant.Restaurant;
-import com.ssak.ssak.domain.restaurant.RestaurantType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import org.locationtech.jts.geom.Point;
-import java.time.LocalTime;
-
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RestaurantResponse {
+public class RestaurantListResponse {
     private Long restaurantId;
     private String restaurantName;
     private String restaurantLocation;
-    private RestaurantType restaurantType;
-    private LocalTime openTime;
-    private LocalTime closeTime;
-    private Point restaurantCoord;
     private String restaurantImgUrl;
+    private boolean isWished;
 
-    public static RestaurantResponse from(Restaurant restaurant) {
-        return RestaurantResponse.builder()
+    public static RestaurantListResponse from(Restaurant restaurant, boolean isWished) {
+        return RestaurantListResponse.builder()
                 .restaurantId(restaurant.getRestaurantId())
                 .restaurantName(restaurant.getRestaurantName())
                 .restaurantLocation(restaurant.getRestaurantLocation())
-                .restaurantType(restaurant.getRestaurantType())
-                .restaurantCoord(restaurant.getRestaurantCoord())
                 .restaurantImgUrl(restaurant.getRestaurantImgUrl())
+                .isWished(isWished)
                 .build();
     }
 }

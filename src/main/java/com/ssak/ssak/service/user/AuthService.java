@@ -59,7 +59,11 @@ public class AuthService {
     @Value("${kakao.admin-key}")
     private String kakaoAdminKey;
 
-    // 회원가입 (일반)
+    /**
+     * 일반 회원가입을 수행합니다.
+     * @param request
+     * @return
+     */
     @Transactional
     public UserResponse signUp(SignUpRequest request) {
 
@@ -102,7 +106,12 @@ public class AuthService {
         return UserResponse.from(savedUser);
     }
 
-    // 로그인
+    /**
+     * 일반 로그인을 수행합니다.
+     * @param request
+     * @param response
+     * @return
+     */
     @Transactional
     public TokenResponse generalLogin(LoginRequest request, HttpServletResponse response) {
         // 1. 사용자 조회
@@ -134,21 +143,15 @@ public class AuthService {
                 TimeUnit.MILLISECONDS
         );
 
-        // 6. Refresh Token을 쿠키로 설정
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
-                .httpOnly(true)
-                .secure(true) // 로컬 테스트 시 false, 운영 시 true
-                .path("/")
-                .maxAge(refreshExpiration / 1000)
-                .sameSite("Lax")
-                .build();
-        response.addHeader("Set-Cookie", cookie.toString());
-
-        return new TokenResponse(accessToken);
+        return new TokenResponse(accessToken, refreshToken);
     }
 
-    // AccessToken 재발급
-    public TokenResponse reissue(String refreshToken, HttpServletResponse response) {
+    /**
+     * AccessToken을 재발급합니다.
+     * @param refreshToken
+     * @return
+     */
+    public TokenResponse reissue(String refreshToken) {
         // 1. RefreshToken 검증
         if(!jwtTokenProvider.validateToken(refreshToken)) {
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
@@ -176,20 +179,14 @@ public class AuthService {
                 TimeUnit.MILLISECONDS
         );
 
-        // 6. 새 RefreshToken 쿠키로 전달
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
-                .httpOnly(true)
-                .secure(true)      // https환경은 true
-                .path("/")
-                .maxAge(refreshExpiration/1000) // 초단위 설정
-                .sameSite("Lax")
-                .build();
-        response.addHeader("Set-Cookie", cookie.toString());
-
-        return new TokenResponse(newAccessToken);
+        return new TokenResponse(newAccessToken, newRefreshToken);
     }
 
-    // 비밀번호 재설정
+    /**
+     * 비밀번호를 재설정합니다.
+     * @param request
+     * @return
+     */
     @Transactional
     public String resetPassword(PasswordResetRequest request) {
         // 1. 이메일 인증여부 확인
@@ -211,7 +208,12 @@ public class AuthService {
         return "비밀번호가 재설정되었습니다.";
     }
 
-    // 로그아웃
+    /**
+     * 로그아웃을 수행합니다.
+     * @param request
+     * @param response
+     * @return
+     */
     @Transactional
     public String logout(HttpServletRequest request, HttpServletResponse response) {
         // 1. 헤더에서 AccessToken 추출
@@ -247,17 +249,7 @@ public class AuthService {
             throw new CustomException(ErrorCode.ACCESS_TOKEN_EXPIRED);
         }
 
-        // 4. 쿠키 삭제 명령 to 브라우저
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
-                .httpOnly(true)
-                .secure(true)
-                .path("/")
-                .maxAge(0) // 즉시 삭제
-                .sameSite("Lax")
-                .build();
-        response.addHeader("Set-Cookie", cookie.toString());
-
-        // 5. 소셜 로그인한 사용자인 경우
+        // 4. 소셜 로그인한 사용자인 경우
         User user = userRepository.findByUserEmail(jwtTokenProvider.getEmail(accessToken)).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         if(user.getLoginType() == LoginType.KAKAO){ // 카카오 로그인
@@ -269,7 +261,12 @@ public class AuthService {
         }
     }
 
-    // 회원탈퇴
+    /**
+     * 회원탈퇴를 수행합니다.
+     * @param request
+     * @param response
+     * @return
+     */
     @Transactional
     public String withdrawal(HttpServletRequest request, HttpServletResponse response) {
         // 1. 헤더에서 AccessToken 추출
@@ -291,7 +288,7 @@ public class AuthService {
         }
         // * 구글은 프론트 측에서 처리하는 것이 더 효율적인 것 같음
 
-        // 3. 연관 데이터 삭제
+        // 3. 연관 데이터 삭제 TODO 이부분 추가된 내용 연관관계 관련
         pointHistRepository.deleteAllByUser(user);
         couponHistRepository.deleteAllByUser(user);
         couponWishRepository.deleteAllByUser(user);
@@ -307,6 +304,10 @@ public class AuthService {
         return "회원 탈퇴가 완료되었습니다.";
     }
 
+    /**
+     * 카카오 unlink를 수행합니다.
+     * @param providerId
+     */
     private void unlinkKakao(String providerId) {
         String url = "https://kapi.kakao.com/v1/user/unlink";
 
@@ -329,4 +330,37 @@ public class AuthService {
         }
     }
 
+
+    /**
+     * 소셜 로그인 oauth2 과정에서 code -> token 변환
+     * @param request
+     * @return
+     */
+    @Transactional
+    public TokenResponse exchangeToken(TokenRequest request) {
+        // 1. Redis에서 코드로 이메일 조회
+        String email = (String) redisTemplate.opsForValue().get("OAUTH_CODE:" + request.getCode());
+
+        if (email == null || email.isEmpty()) {
+            throw new CustomException(ErrorCode.EMAIL_VERIFICATION_INVALID);
+        }
+
+        // 2. 코드 즉시 삭제 (1회용)
+        redisTemplate.delete("OAUTH_CODE:" + request.getCode());
+
+        // 3. JWT 토큰 생성
+        String accessToken = jwtTokenProvider.generateAccessToken(email);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(email);
+
+        // 4. Redis에 Refresh Token 저장
+        redisTemplate.opsForValue().set(
+                "RT:" + email,
+                refreshToken,
+                refreshExpiration,
+                TimeUnit.MILLISECONDS
+        );
+
+        // 5. JSON 응답
+        return new TokenResponse(accessToken, refreshToken);
+    }
 }
