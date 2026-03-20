@@ -25,6 +25,7 @@ public class Post extends BaseEntity {
     @Column(name = "POST_CONTENT")
     private String postContent;
 
+    @Builder.Default
     @Column(name = "POST_VISIBILITY")
     private Boolean postVisibility = true;
 

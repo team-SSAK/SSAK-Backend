@@ -15,7 +15,7 @@ import java.util.List;
 @Builder
 public class PostResponse {
     private Long postId;
-    private boolean postVisibility;
+    private Boolean postVisibility;
     private String postTitle;
     private String postContent;
     private LocalDateTime postCreateTime;

@@ -22,6 +22,7 @@ public class Comment extends BaseEntity {
     @Column(name = "COMMENT_CONTENT")
     private String commentContent;
 
+    @Builder.Default
     @Column(name = "COMMENT_VISIBILITY")
     private Boolean commentVisibility = true;
 
