@@ -312,9 +312,14 @@ public class PostService {
      */
     public String reportPost(Long postId, ReportRequest request, Long userId) {
         Post post =  postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
-        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        if(!userRepository.existsById(userId)) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
 
-        //TODO: 중복신고 방지?
+        // 중복 신고 방지
+        if(reportRepository.existsByReporterIdAndTargetIdAndTargetType(userId, postId, ReportType.POST)) {
+            throw new CustomException(ErrorCode.ALREADY_REPORTED);
+        }
 
         Report report = Report.builder()
                 .reporterId(userId)
@@ -324,7 +329,40 @@ public class PostService {
                 .build();
         reportRepository.save(report);
 
-        // TODO : 신고 들어온 게시글 바로 안보이게? - 누적되면 숨김?
+        // 신고 3회 이상 당한 경우 블라인드 처리
+        int reportedCnt = reportRepository.countByTargetIdAndTargetType(postId, ReportType.POST);
+
+        if(reportedCnt >= 3) {
+            post.changeVisibility(false);
+        }
+
+        return "신고가 정상적으로 접수되었습니다.";
+    }
+
+    public String reportComment(Long commentId, ReportRequest request, Long userId) {
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
+        if(!userRepository.existsById(userId)) {
+            throw new  CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        if(reportRepository.existsByReporterIdAndTargetIdAndTargetType(userId, commentId, ReportType.COMMENT)) {
+            throw new CustomException(ErrorCode.ALREADY_REPORTED);
+        }
+
+        Report report = Report.builder()
+                .reportId(userId)
+                .reportContent(request.getReportContent())
+                .targetId(commentId)
+                .targetType(ReportType.COMMENT)
+                .build();
+        reportRepository.save(report);
+
+        int reportedCnt = reportRepository.countByTargetIdAndTargetType(commentId, ReportType.COMMENT);
+
+        if(reportedCnt >= 3) {
+            comment.changeVisibility(false);
+        }
+
         return "신고가 정상적으로 접수되었습니다.";
     }
 }
