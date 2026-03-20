@@ -72,4 +72,8 @@ public class Post extends BaseEntity {
         if(postContent != null) this.postContent = postContent;
         if(postVisibility != null) this.postVisibility = postVisibility;
     }
+
+    public void changeVisibility(Boolean postVisibility) {
+        this.postVisibility = postVisibility;
+    }
 }

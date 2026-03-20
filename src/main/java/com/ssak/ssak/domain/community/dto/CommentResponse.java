@@ -17,6 +17,7 @@ import java.util.List;
 public class CommentResponse {
     private Long commentId;
     private String commentContent;
+    private Boolean commentVisibility;
     private String nickname;
     private LocalDateTime commentCreateTime;
 
@@ -27,6 +28,7 @@ public class CommentResponse {
         return CommentResponse.builder()
                 .commentId(comment.getCommentId())
                 .commentContent(comment.getCommentContent())
+                .commentVisibility(comment.getCommentVisibility())
                 .nickname(comment.getUser().getUserNm())
                 .commentCreateTime(comment.getCreatedAt())
                 .childrenComments(comment.getChildren().stream()

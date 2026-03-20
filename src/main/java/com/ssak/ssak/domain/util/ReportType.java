@@ -2,5 +2,6 @@ package com.ssak.ssak.domain.util;
 
 public enum ReportType {
     USER,
-    POST
+    POST,
+    COMMENT
 }

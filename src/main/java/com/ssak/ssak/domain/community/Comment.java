@@ -22,6 +22,9 @@ public class Comment extends BaseEntity {
     @Column(name = "COMMENT_CONTENT")
     private String commentContent;
 
+    @Column(name = "COMMENT_VISIBILITY")
+    private Boolean commentVisibility = true;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "USER_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_USER_COMMENT"))
     private User user;
@@ -40,5 +43,9 @@ public class Comment extends BaseEntity {
 
     public void editComment(String commentContent) {
         this.commentContent = commentContent;
+    }
+
+    public void changeVisibility(boolean commentVisibility) {
+        this.commentVisibility = commentVisibility;
     }
 }

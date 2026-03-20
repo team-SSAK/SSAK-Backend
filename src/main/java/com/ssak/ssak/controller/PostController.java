@@ -128,4 +128,16 @@ public class PostController {
     public ResponseEntity<String> reportPost(@PathVariable Long postId, @RequestBody ReportRequest request, @AuthenticationPrincipal CustomUserDetails userDetails) {
         return ResponseEntity.ok(postService.reportPost(postId, request, userDetails.getUserId()));
     }
+
+    /**
+     * 특정 댓글을 신고한다.
+     * @param commentId
+     * @param request
+     * @param userDetails
+     * @return
+     */
+    @PostMapping("/comment/{commentId}/report")
+    public ResponseEntity<String> reportComment(@PathVariable Long commentId, @RequestBody ReportRequest request, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(postService.reportComment(commentId, request, userDetails.getUserId()));
+    }
 }
