@@ -1,7 +1,9 @@
 package com.ssak.ssak.service.user;
 
 import com.ssak.ssak.domain.Point.PointHistRepository;
+import com.ssak.ssak.domain.community.CommentLikeRepository;
 import com.ssak.ssak.domain.community.CommentRepository;
+import com.ssak.ssak.domain.community.PostLikeRepository;
 import com.ssak.ssak.domain.community.PostRepository;
 import com.ssak.ssak.domain.coupon.CouponHistRepository;
 import com.ssak.ssak.domain.coupon.CouponWishRepository;
@@ -50,6 +52,8 @@ public class AuthService {
     private final RestaurantWishRepository restaurantWishRepository;
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
+    private final PostLikeRepository postLikeRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     @Value("${jwt.refresh-expiration}")
     private Long refreshExpiration;
@@ -298,12 +302,13 @@ public class AuthService {
         couponWishRepository.deleteAllByUser(user);
         notificationRepository.deleteAllByUser(user);
         restaurantWishRepository.deleteAllByUser(user);
+        postLikeRepository.deleteAllByUser(user);
+        commentLikeRepository.deleteAllByUser(user);
 
         // 4. 사용자가 등록했던 게시물, 댓글 연관관계 제거
         postRepository.findByUser(user).forEach(post -> {
             post.removeUser();
         });
-
         commentRepository.findByUser(user).forEach(comment -> {
             comment.removeUser();
         });
