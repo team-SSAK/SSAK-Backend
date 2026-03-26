@@ -1,6 +1,8 @@
 package com.ssak.ssak.service.user;
 
 import com.ssak.ssak.domain.Point.PointHistRepository;
+import com.ssak.ssak.domain.community.CommentRepository;
+import com.ssak.ssak.domain.community.PostRepository;
 import com.ssak.ssak.domain.coupon.CouponHistRepository;
 import com.ssak.ssak.domain.coupon.CouponWishRepository;
 import com.ssak.ssak.domain.restaurant.RestaurantWishRepository;
@@ -46,6 +48,8 @@ public class AuthService {
     private final CouponHistRepository couponHistRepository;
     private final CouponWishRepository couponWishRepository;
     private final RestaurantWishRepository restaurantWishRepository;
+    private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
 
     @Value("${jwt.refresh-expiration}")
     private Long refreshExpiration;
@@ -295,10 +299,19 @@ public class AuthService {
         notificationRepository.deleteAllByUser(user);
         restaurantWishRepository.deleteAllByUser(user);
 
-        // 4. 리프레시 토큰 삭제
+        // 4. 사용자가 등록했던 게시물, 댓글 연관관계 제거
+        postRepository.findByUser(user).forEach(post -> {
+            post.removeUser();
+        });
+
+        commentRepository.findByUser(user).forEach(comment -> {
+            comment.removeUser();
+        });
+
+        // 5. 리프레시 토큰 삭제
         redisTemplate.delete("RT:" + email);
 
-        // 5. 유저 삭제
+        // 6. 유저 삭제
         userRepository.deleteById(user.getUserId());
 
         return "회원 탈퇴가 완료되었습니다.";

@@ -8,6 +8,7 @@ import lombok.*;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Builder
 public class Notification extends BaseEntity {
     @Id
     @Column(name = "USER_ID")
@@ -18,23 +19,20 @@ public class Notification extends BaseEntity {
     @JoinColumn(name = "USER_ID")
     private User user;
 
+    @Builder.Default
     @Column(name = "EVENT_NOTI_YN")
     private boolean eventNotiYn = true;     // 이벤트 및 혜택 알림
 
+    @Builder.Default
     @Column(name = "COMMUNITY_NOTI_YN")
     private boolean communityNotiYn = true;    // 커뮤니티 알림
 
+    @Builder.Default
     @Column(name = "NIGHT_NOTI_YN")
     private boolean nightNotiYn = false;    // 야간 알림
 
-    @Builder
-    public Notification(User user, Boolean eventNotiYn, Boolean communityNotiYn, Boolean nightNotiYn) {
-        this.user = user;
-        this.eventNotiYn = (eventNotiYn != null) ? eventNotiYn : false;
-        this.communityNotiYn = (communityNotiYn != null) ? communityNotiYn : true;
-        this.nightNotiYn = (nightNotiYn != null) ? nightNotiYn : false;
-    }
 
+    // 알림 수정 메서드
     public void updateNotification(Boolean eventNotiYn, Boolean communityNotiYn, Boolean nightNotiYn) {
         if(eventNotiYn != null) this.eventNotiYn  = eventNotiYn;
         if(communityNotiYn != null) this .communityNotiYn  = communityNotiYn;

@@ -36,7 +36,7 @@ public class Post extends BaseEntity {
     private int postCommentCnt = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "USER_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_POST_WRITER"))
+    @JoinColumn(name = "USER_ID", foreignKey = @ForeignKey(name = "FK_POST_WRITER"))
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -76,5 +76,9 @@ public class Post extends BaseEntity {
 
     public void changeVisibility(Boolean postVisibility) {
         this.postVisibility = postVisibility;
+    }
+
+    public void removeUser() {
+        this.user = null;
     }
 }
