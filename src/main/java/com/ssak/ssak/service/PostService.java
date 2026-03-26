@@ -36,6 +36,7 @@ public class PostService {
     private final PostPhotoRepository postPhotoRepository;
     private final PostLikeRepository postLikeRepository;
     private final ReportRepository reportRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     /**
      * 해당 식당에 해당하는 게시글을 모두 반환한다.
@@ -208,6 +209,27 @@ public class PostService {
     }
 
     /**
+     * 자신이 작성한 게시물을 삭제한다.
+     * @param postId
+     * @param userId
+     * @return
+     */
+    @Transactional
+    public String deletePost(Long postId, Long userId) {
+        //TODO: cascade 확인하기 - post-comment
+
+        Post post = postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if(!post.getUser().equals(user)) {
+            throw new CustomException(ErrorCode.NOT_POST_OWNER);
+        }
+
+        postRepository.delete(post);
+        return "게시글이 성공적으로 삭제되었습니다.";
+    }
+
+    /**
      * 해당 식당의 커뮤니티의 특정 게시글에 댓글을 작성한다.
      * @param postId
      * @return
@@ -241,24 +263,26 @@ public class PostService {
     }
 
     /**
-     * 자신이 작성한 게시물을 삭제한다.
-     * @param postId
+     * 특정 댓글에 대한 좋아요를 등록/취소한다.
+     * @param commentId
      * @param userId
      * @return
      */
     @Transactional
-    public String deletePost(Long postId, Long userId) {
-        //TODO: cascade 확인하기 - post-comment
-
-        Post post = postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
+    public CommentLikeResponse likeComment(Long commentId, Long userId) {
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        Optional<CommentLike> commentLike = commentLikeRepository.findByUser_UserIdAndComment_CommentId(userId, commentId);
 
-        if(!post.getUser().equals(user)) {
-            throw new CustomException(ErrorCode.NOT_POST_OWNER);
+        if (commentLike.isPresent()) {
+            commentLikeRepository.delete(commentLike.get());
+            comment.deleteLiked();
+            return new CommentLikeResponse(false, commentId);
+        } else {
+            commentLikeRepository.save(CommentLike.createCommentLike(user, comment));
+            comment.addLiked();
+            return new CommentLikeResponse(true, commentId);
         }
-
-        postRepository.delete(post);
-        return "게시글이 성공적으로 삭제되었습니다.";
     }
 
     /**
@@ -352,7 +376,7 @@ public class PostService {
         }
 
         Report report = Report.builder()
-                .reportId(userId)
+                .reporterId(userId)
                 .reportContent(request.getReportContent())
                 .targetId(commentId)
                 .targetType(ReportType.COMMENT)

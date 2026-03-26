@@ -74,6 +74,17 @@ public class PostController {
     }
 
     /**
+     * 특정 댓글을 좋아요 등록/취소 한다.
+     * @param commentLikeRequest
+     * @param userDetails
+     * @return
+     */
+    @PostMapping("/comment/wish")
+    public ResponseEntity<CommentLikeResponse> likeComment(@RequestBody CommentLikeRequest commentLikeRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(postService.likeComment(commentLikeRequest.getLikedCommentId(), userDetails.getUserId()));
+    }
+
+    /**
      * 해당 식당의 커뮤니티의 특정 게시글에 댓글을 작성한다.
      * @param postId
      * @return

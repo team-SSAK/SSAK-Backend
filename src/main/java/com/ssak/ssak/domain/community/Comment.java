@@ -26,6 +26,9 @@ public class Comment extends BaseEntity {
     @Column(name = "COMMENT_VISIBILITY")
     private Boolean commentVisibility = true;
 
+    @Column(name = "COMMENT_LIKE_CNT")
+    private int commentLikeCnt = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "USER_ID", foreignKey = @ForeignKey(name = "FK_USER_COMMENT"))
     private User user;
@@ -42,6 +45,9 @@ public class Comment extends BaseEntity {
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<Comment> children = new ArrayList<>();         // 자식 댓글들
 
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CommentLike> commentLikes;
+
     public void editComment(String commentContent) {
         this.commentContent = commentContent;
     }
@@ -52,5 +58,13 @@ public class Comment extends BaseEntity {
 
     public void removeUser() {
         this.user = null;
+    }
+
+    public void addLiked() {
+        commentLikeCnt++;
+    }
+
+    public void deleteLiked() {
+        commentLikeCnt--;
     }
 }

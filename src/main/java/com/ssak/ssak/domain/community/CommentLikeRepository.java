@@ -7,8 +7,8 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
-    Optional<PostLike> findByUser_UserIdAndPost_PostId(Long userId, Long postId);
+public interface CommentLikeRepository extends JpaRepository<CommentLike, Long> {
+    Optional<CommentLike> findByUser_UserIdAndComment_CommentId(Long userId, Long commentId);
 
     void deleteAllByUser(User user);
 }
