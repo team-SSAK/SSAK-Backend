@@ -5,6 +5,7 @@ import com.ssak.ssak.domain.coupon.CouponHist;
 import com.ssak.ssak.domain.user.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -34,4 +35,13 @@ public class PointHist extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "COUPON_HIST_ID", nullable = true, foreignKey = @ForeignKey(name = "FK_POINT_USED_COUPON"))
     private CouponHist couponHist;
+
+    @Builder
+    public PointHist(User user, CouponHist couponHist, int pointAmount) {
+        this.user = user;
+        this.couponHist = couponHist;
+        this.pointAmount = pointAmount;
+        this.pointDesc = couponHist.getCoupon().getCouponName() + " 교환";
+        this.pointType = PointType.USE;
+    }
 }

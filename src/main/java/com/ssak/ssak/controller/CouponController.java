@@ -1,10 +1,8 @@
 package com.ssak.ssak.controller;
 
 import com.ssak.ssak.domain.coupon.CouponStatus;
-import com.ssak.ssak.domain.coupon.dto.CouponHistResponse;
-import com.ssak.ssak.domain.coupon.dto.CouponWishActionResponse;
-import com.ssak.ssak.domain.coupon.dto.CouponWishRequest;
-import com.ssak.ssak.domain.coupon.dto.CouponWishResponse;
+import com.ssak.ssak.domain.coupon.CouponType;
+import com.ssak.ssak.domain.coupon.dto.*;
 import com.ssak.ssak.security.CustomUserDetails;
 import com.ssak.ssak.service.CouponService;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +52,32 @@ public class CouponController {
     public ResponseEntity<CouponWishActionResponse> updateCouponWishStatus(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                                            @RequestBody CouponWishRequest request) {
         return ResponseEntity.ok(couponService.updateCouponWishStatus(userDetails.getUserId(), request.getWishCouponId()));
+    }
+
+    /**
+     * 쿠폰 목록을 조회한다.
+     * @param type
+     * @return
+     */
+    @GetMapping
+    public ResponseEntity<List<CouponListResponse>> getCouponList(@RequestParam(required = false) CouponType type) {
+        return ResponseEntity.ok(couponService.getCouponList(type));
+    }
+
+    /**
+     * 쿠폰 상세정보를 조회한다.
+     * @param couponId
+     * @return
+     */
+    @GetMapping("/{couponId}")
+    public ResponseEntity<CouponResponse> getCouponDetail(@PathVariable Long couponId) {
+        return ResponseEntity.ok(couponService.getCouponDetail(couponId));
+    }
+
+    @PostMapping("/exchange")
+    public ResponseEntity<CouponExchangeResponse> exchangeIntoCoupon(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                                     @RequestBody CouponExchangeRequest request) {
+        return ResponseEntity.ok(couponService.exchangeIntoCoupon(userDetails.getUserId(), request.getExchangeCouponId()));
     }
 
 }

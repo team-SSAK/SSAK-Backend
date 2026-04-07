@@ -4,6 +4,7 @@ import com.ssak.ssak.domain.common.BaseEntity;
 import com.ssak.ssak.domain.user.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -27,4 +28,11 @@ public class CouponHist extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "COUPON_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_USED_COUPON"))
     private Coupon coupon;
+
+    @Builder
+    public CouponHist(User user, Coupon coupon) {
+        this.user = user;
+        this.coupon = coupon;
+        this.couponStatus = CouponStatus.ISSUED;
+    }
 }
