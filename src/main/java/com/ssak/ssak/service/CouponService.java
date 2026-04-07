@@ -1,9 +1,9 @@
 package com.ssak.ssak.service;
 
+import com.ssak.ssak.domain.Point.PointHist;
+import com.ssak.ssak.domain.Point.PointHistRepository;
 import com.ssak.ssak.domain.coupon.*;
-import com.ssak.ssak.domain.coupon.dto.CouponHistResponse;
-import com.ssak.ssak.domain.coupon.dto.CouponWishActionResponse;
-import com.ssak.ssak.domain.coupon.dto.CouponWishResponse;
+import com.ssak.ssak.domain.coupon.dto.*;
 import com.ssak.ssak.domain.user.User;
 import com.ssak.ssak.domain.user.UserRepository;
 import com.ssak.ssak.exception.CustomException;
@@ -25,6 +25,7 @@ public class CouponService {
     private final CouponWishRepository couponWishRepository;
     private final UserRepository userRepository;
     private final CouponRepository couponRepository;
+    private final PointHistRepository pointHistRepository;
 
     /**
      * 특정 사용자의 특정 상태의 쿠폰 목록을 조회한다.
@@ -77,5 +78,71 @@ public class CouponService {
             couponWishRepository.save(CouponWish.createCouponWish(user, coupon));
             return new CouponWishActionResponse(true, couponId);
         }
+    }
+
+    /**
+     * 쿠폰 목록을 조회한다.
+     * @param type
+     * @return
+     */
+    @Transactional(readOnly = true)
+    public List<CouponListResponse> getCouponList(CouponType type) {
+        // 유효한 쿠폰 전체 조회
+        List<Coupon> coupons;
+        if(type == null) {
+            coupons = couponRepository.findAllByCouponValidTrue();
+        } else { // 타입별 조회
+            coupons = couponRepository.findAllByCouponValidTrueAndCouponType(type);
+        }
+
+        return coupons.stream()
+                .map(CouponListResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 쿠폰 상세정보를 조회한다.
+     * @param couponId
+     * @return
+     */
+    public CouponResponse getCouponDetail(Long couponId) {
+        Coupon coupon = couponRepository.findById(couponId).orElseThrow(() -> new CustomException(ErrorCode.COUPON_NOT_FOUND));
+        return CouponResponse.from(coupon);
+    }
+
+    /**
+     * 포인트를 쿠폰으로 교환한다.
+     * @param userId
+     * @param exchangeCouponId
+     * @return
+     */
+    public CouponExchangeResponse exchangeIntoCoupon(Long userId, Long exchangeCouponId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        Coupon coupon = couponRepository.findById(exchangeCouponId).orElseThrow(() -> new CustomException(ErrorCode.COUPON_NOT_FOUND));
+
+        // 1. 보유 포인트가 충분한 지 확인
+        if (user.getCurrentPoint() < coupon.getCouponPoint()) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_POINTS);
+        }
+
+        // 2. 사용자 포인트 차감
+        user.removePoint(coupon.getCouponPoint());
+
+        // 3. 사용자에게 쿠폰 발급
+        CouponHist couponHist = CouponHist.builder()
+                .coupon(coupon)
+                .user(user)
+                .build();
+        couponHistRepository.save(couponHist);
+
+        // 4. 포인트 사용이력에 추가
+        PointHist pointHist = PointHist.builder()
+                .user(user)
+                .couponHist(couponHist)
+                .pointAmount(coupon.getCouponPoint())
+                .build();
+        pointHistRepository.save(pointHist);
+
+        return CouponExchangeResponse.from(coupon, user);
     }
 }

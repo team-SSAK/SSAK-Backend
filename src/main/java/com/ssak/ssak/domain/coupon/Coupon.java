@@ -24,6 +24,9 @@ public class Coupon extends BaseEntity {
     @Column(name = "COUPON_POINT", nullable = false)
     private int couponPoint;    // 쿠폰 포인트
 
+    @Column(name = "COUPON_TYPE")
+    private CouponType couponType;  // 쿠폰 타입
+
     @Column(name = "COUPON_STORE")
     private String couponStore;  // 가게 이름 TODO : 추후에 테이블로 분리 예정일수도
 
