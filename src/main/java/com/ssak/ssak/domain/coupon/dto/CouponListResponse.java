@@ -16,6 +16,7 @@ public class CouponListResponse {
     private String couponName;
     private int couponPoint;
     private CouponType couponType;
+    private String couponStore;
 
     public static CouponListResponse from(Coupon coupon) {
         return CouponListResponse.builder()
@@ -23,6 +24,7 @@ public class CouponListResponse {
                 .couponName(coupon.getCouponName())
                 .couponPoint(coupon.getCouponPoint())
                 .couponType(coupon.getCouponType())
+                .couponStore(coupon.getCouponStore().getCouponStoreName())
                 .build();
     }
 }

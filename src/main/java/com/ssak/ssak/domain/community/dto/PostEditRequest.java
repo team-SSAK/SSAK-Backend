@@ -17,6 +17,6 @@ public class PostEditRequest {
     private String postContent;
     private Boolean postVisibility;
 
-    private List<Long> deleteImageIds;          // 삭제 필요한 이미지 ID
+//    private List<Long> deleteImageIds;          // 삭제 필요한 이미지 ID
     private List<MultipartFile> newImages;      // 새로운 이미지 ID
 }

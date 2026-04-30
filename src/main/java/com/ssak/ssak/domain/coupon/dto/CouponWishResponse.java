@@ -21,7 +21,7 @@ public class CouponWishResponse {
         return CouponWishResponse.builder()
                 .couponWishId(couponWish.getCouponWishId())
                 .couponNm(couponWish.getCoupon().getCouponName())
-                .couponStore(couponWish.getCoupon().getCouponStore())
+                .couponStore(couponWish.getCoupon().getCouponStore().getCouponStoreName())
                 .couponPoint(couponWish.getCoupon().getCouponPoint())
                 .couponImgUrl(couponWish.getCoupon().getCouponImgUrl())
                 .build();

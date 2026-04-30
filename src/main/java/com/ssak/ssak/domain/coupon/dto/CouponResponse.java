@@ -19,6 +19,7 @@ public class CouponResponse {
     private CouponType couponType;
     private String couponStore;
     private String couponImgUrl;
+    private int couponValidTerm;
 
     public static CouponResponse from (Coupon coupon) {
         return CouponResponse.builder()
@@ -27,8 +28,9 @@ public class CouponResponse {
                 .couponDescription(coupon.getCouponDesc())
                 .couponPoint(coupon.getCouponPoint())
                 .couponType(coupon.getCouponType())
-                .couponStore(coupon.getCouponStore())
+                .couponStore(coupon.getCouponStore().getCouponStoreName())
                 .couponImgUrl(coupon.getCouponImgUrl())
+                .couponValidTerm(coupon.getCouponValidTerm())
                 .build();
     }
 }

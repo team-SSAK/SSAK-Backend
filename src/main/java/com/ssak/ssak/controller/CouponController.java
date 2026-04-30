@@ -80,4 +80,10 @@ public class CouponController {
         return ResponseEntity.ok(couponService.exchangeIntoCoupon(userDetails.getUserId(), request.getExchangeCouponId()));
     }
 
+
+    @PostMapping("/use")
+    public ResponseEntity<CouponUseResponse> useCoupon(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                       @RequestBody CouponUseRequest request) {
+        return ResponseEntity.ok(couponService.useCoupon(userDetails.getUserId(), request));
+    }
 }

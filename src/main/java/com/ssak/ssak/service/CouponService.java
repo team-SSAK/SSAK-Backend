@@ -136,7 +136,7 @@ public class CouponService {
         couponHistRepository.save(couponHist);
 
         // 4. 포인트 사용이력에 추가
-        PointHist pointHist = PointHist.builder()
+        PointHist pointHist = PointHist.couponUseBuilder()
                 .user(user)
                 .couponHist(couponHist)
                 .pointAmount(coupon.getCouponPoint())
@@ -144,5 +144,20 @@ public class CouponService {
         pointHistRepository.save(pointHist);
 
         return CouponExchangeResponse.from(coupon, user);
+    }
+
+    public CouponUseResponse useCoupon(Long userId, CouponUseRequest request) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        CouponHist couponHist = couponHistRepository.findById(request.getCouponHistId()).orElseThrow(() -> new CustomException(ErrorCode.INVALID_COUPON));
+
+        // 쿠폰 사용 인증 번호 확인
+        int storePw = couponHist.getCoupon().getCouponStore().getCouponStorePassword();
+        if (request.getStorePw() != storePw) {
+            throw new CustomException(ErrorCode.INVALID_STORE_PASSWORD);
+        }
+
+        // 쿠폰 사용 처리
+        couponHist.changeCouponStatus(CouponStatus.USED);
+        return CouponUseResponse.from(couponHist);
     }
 }

@@ -35,4 +35,8 @@ public class CouponHist extends BaseEntity {
         this.coupon = coupon;
         this.couponStatus = CouponStatus.ISSUED;
     }
+
+    public void changeCouponStatus(CouponStatus couponStatus) {
+        this.couponStatus = couponStatus;
+    }
 }

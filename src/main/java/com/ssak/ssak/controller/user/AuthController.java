@@ -89,7 +89,7 @@ public class AuthController {
      * @return
      */
     @PostMapping("/token")
-    public ResponseEntity<TokenResponse> exchangeToken(@RequestBody TokenRequest request) {
+    public ResponseEntity<SocialLoginTokenResponse> exchangeToken(@RequestBody TokenRequest request) {
         return ResponseEntity.ok(authService.exchangeToken(request));
     }
 }

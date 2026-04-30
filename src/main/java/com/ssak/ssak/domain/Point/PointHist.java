@@ -36,12 +36,23 @@ public class PointHist extends BaseEntity {
     @JoinColumn(name = "COUPON_HIST_ID", nullable = true, foreignKey = @ForeignKey(name = "FK_POINT_USED_COUPON"))
     private CouponHist couponHist;
 
-    @Builder
+    // 쿠폰 사용 빌더
+    @Builder(builderMethodName = "couponUseBuilder")
     public PointHist(User user, CouponHist couponHist, int pointAmount) {
         this.user = user;
         this.couponHist = couponHist;
         this.pointAmount = pointAmount;
         this.pointDesc = couponHist.getCoupon().getCouponName() + " 교환";
         this.pointType = PointType.USE;
+    }
+
+    // 포인트 적립 빌더
+    @Builder(builderMethodName = "savePointBuilder")
+    public PointHist(User user, int pointAmount, String pointDesc) {
+        this.user = user;
+        this.pointAmount = pointAmount;
+        this.pointDesc = pointDesc;
+        this.pointType = PointType.SAVE;
+        this.couponHist = null;
     }
 }

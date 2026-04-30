@@ -152,21 +152,32 @@ public class PostService {
 
         // 3. 이미지 변경사항 있을 경우
             // 삭제
-        if (request.getDeleteImageIds() != null && !request.getDeleteImageIds().isEmpty()) {
-
-            List<PostPhoto> photos = postPhotoRepository.findAllByPostPhotoIdInAndPostPostId(request.getDeleteImageIds(), post.getPostId());
-
-            if (photos.size() != request.getDeleteImageIds().size()) {
-                throw new CustomException(ErrorCode.IMAGE_NOT_FOUND);
-            }
-
+//        if (request.getDeleteImageIds() != null && !request.getDeleteImageIds().isEmpty()) {
+//
+//            List<PostPhoto> photos = postPhotoRepository.findAllByPostPhotoIdInAndPostPostId(request.getDeleteImageIds(), post.getPostId());
+//
+//            if (photos.size() != request.getDeleteImageIds().size()) {
+//                throw new CustomException(ErrorCode.IMAGE_NOT_FOUND);
+//            }
+//
+//            for (PostPhoto photo : photos) {
+//                s3Service.deleteExistingProfileImage(photo.getPostPhotoUrl());
+//            }
+//            postPhotoRepository.deleteAll(photos);
+//
+//        }
+        // 기존의 post와 관련된 이미지 모두 삭제 - 다시 추가하도록
+        Optional<List<PostPhoto>> postPhotos = postPhotoRepository.findByPostPostId(post.getPostId());
+        postPhotos.ifPresent(photos -> {
+            // 1. S3 이미지 삭제
             for (PostPhoto photo : photos) {
                 s3Service.deleteExistingProfileImage(photo.getPostPhotoUrl());
             }
+            // 2. DB 데이터 삭제
             postPhotoRepository.deleteAll(photos);
+        });
 
-        }
-            // 추가
+        // 추가
         if(request.getNewImages() != null && !request.getNewImages().isEmpty()) {
             List<String> images = s3Service.uploadImages(request.getNewImages(), "post");
 
