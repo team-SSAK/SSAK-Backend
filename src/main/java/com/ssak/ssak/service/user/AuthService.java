@@ -355,7 +355,7 @@ public class AuthService {
      * @return
      */
     @Transactional
-    public TokenResponse exchangeToken(TokenRequest request) {
+    public SocialLoginTokenResponse exchangeToken(TokenRequest request) {
         // 1. Redis에서 코드로 이메일 조회
         String email = (String) redisTemplate.opsForValue().get("OAUTH_CODE:" + request.getCode());
 
@@ -378,7 +378,10 @@ public class AuthService {
                 TimeUnit.MILLISECONDS
         );
 
+        // 5. 기존 사용자 여부 추가조회
+        Boolean isNewUser = (Boolean) redisTemplate.opsForValue().get("IS_NEW_USER:" + email);
+
         // 5. JSON 응답
-        return new TokenResponse(accessToken, refreshToken);
+        return new SocialLoginTokenResponse(accessToken, refreshToken, isNewUser);
     }
 }

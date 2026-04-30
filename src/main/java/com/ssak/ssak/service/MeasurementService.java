@@ -1,5 +1,7 @@
 package com.ssak.ssak.service;
 
+import com.ssak.ssak.domain.Point.PointHist;
+import com.ssak.ssak.domain.Point.PointHistRepository;
 import com.ssak.ssak.domain.measurement.Measurement;
 import com.ssak.ssak.domain.measurement.MeasurementRepository;
 import com.ssak.ssak.domain.measurement.dto.AIResponse;
@@ -21,6 +23,7 @@ public class MeasurementService {
     private final RestTemplate restTemplate;
     private final UserRepository userRepository;
     private final MeasurementRepository measurementRepository;
+    private final PointHistRepository pointHistRepository;
 
     /**
      * 잔반을 측정한다
@@ -58,6 +61,14 @@ public class MeasurementService {
                 .leftoverRatio(leftoverRatio)
                 .build();
         measurementRepository.save(measurement);
+
+        // 5. 포인트 내역에 저장
+        PointHist pointHist = PointHist.savePointBuilder()
+                .user(user)
+                .pointAmount(addedPoints) // int 타입
+                .pointDesc("잔반 인증 완료 " + (int) (leftoverRatio * 100) + "%") // String 타입
+                .build();
+        pointHistRepository.save(pointHist);
 
         return MeasurementResponse.from(measurement, addedPoints, user.getCurrentPoint());
     }

@@ -28,6 +28,8 @@ public enum ErrorCode {
 
     // COUPON
     COUPON_NOT_FOUND(HttpStatus.BAD_REQUEST, "C001", "존재하지 않는 쿠폰입니다."),
+    INVALID_COUPON(HttpStatus.BAD_REQUEST, "C002", "유효하지 않은 쿠폰입니다."),
+    INVALID_STORE_PASSWORD(HttpStatus.BAD_REQUEST, "C003", "쿠폰 가게의 비밀번호가 일치하지 않습니다."),
 
     // RESTAURANT
     RESTAURANT_NOT_FOUND(HttpStatus.BAD_REQUEST, "R001", "존재하지 않는 식당입니다."),

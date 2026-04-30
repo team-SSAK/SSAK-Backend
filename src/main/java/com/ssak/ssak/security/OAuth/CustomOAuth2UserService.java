@@ -7,11 +7,15 @@ import com.ssak.ssak.exception.ErrorCode;
 import com.ssak.ssak.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 // 소셜 로그인용
 
@@ -20,6 +24,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final UserRepository userRepository;
+    private final RedisTemplate<Object, Object> redisTemplate;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -42,10 +47,20 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new OAuth2AuthenticationException("이메일을 찾을 수 없습니다.");
         }
 
-        User user = userRepository.findByUserEmail(oAuth2UserInfo.getEmail())
-                .orElseGet(() -> createUser(oAuth2UserInfo));
+        Optional<User> optionalUser = userRepository.findByUserEmail(oAuth2UserInfo.getEmail());
 
-        // TODO: 마케팅 알림 업데이트...?
+        // 신규 회원 여부 판단
+        boolean isNewUser = optionalUser.isEmpty();
+
+        User user = optionalUser.orElseGet(() -> createUser(oAuth2UserInfo));
+
+        // 기존사용자 여부 임시저장
+        redisTemplate.opsForValue().set(
+                "IS_NEW_USER:" + user.getUserEmail(),
+                isNewUser,
+                1,
+                TimeUnit.MINUTES
+        );
 
         return new CustomUserDetails(user, oAuth2User.getAttributes());
     }

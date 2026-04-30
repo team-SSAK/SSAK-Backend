@@ -5,5 +5,6 @@ public enum CouponType {
     CONVENIENT_STORE,   //편의점
     MEAL,   //식사
     CERTIFICATE,    //상품권
+    LIVING,         //리빙
     ETC     //기타
 }
