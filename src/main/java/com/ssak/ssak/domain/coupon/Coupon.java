@@ -24,6 +24,7 @@ public class Coupon extends BaseEntity {
     @Column(name = "COUPON_POINT", nullable = false)
     private int couponPoint;    // 쿠폰 포인트
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "COUPON_TYPE")
     private CouponType couponType=CouponType.ETC;  // 쿠폰 타입
 
