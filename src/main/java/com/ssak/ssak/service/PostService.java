@@ -103,6 +103,7 @@ public class PostService {
         Post post = Post.builder()
                 .postTitle(request.getPostTitle())
                 .postContent(request.getPostContent())
+                .postVisibility(request.getPostVisibility())
                 .restaurant(restaurant)
                 .user(user)
                 .build();

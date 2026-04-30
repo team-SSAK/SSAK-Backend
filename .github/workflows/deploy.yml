@@ -42,26 +42,22 @@ jobs:
       - name: Push into DockerHub
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/seederslab-server:latest
 
-      # 7. ec2 내에서 도커 이미지 풀 및 실행
-      - name: SSH into EC2 and deploy container with Docker
+      # 7. ec2 내에서 docker-compose로 컨테이너 업데이트 및 재시작
+      - name: SSH into EC2 and deploy container with Docker Compose
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # 기존 컨테이너 중지 및 삭제
-            docker stop seederslab-server || true
-            docker rm seederslab-server || true
+            # 앱 폴더로 이동
+            cd /home/ubuntu/app
             
             # 최신 이미지 pull
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/seederslab-server:latest
             
-            # 컨테이너 재시작
-            docker run -d -p 8080:8080 \
-            --name seederslab-server \
-            --env-file ./.env \
-            ${{ secrets.DOCKERHUB_USERNAME }}/seederslab-server:latest
+            # 플랫폼 컨테이너만 새 이미지로 재실행
+            docker-compose up -d --no-deps seederslab-server
             
             # 사용하지 않는 이미지 정리
             docker image prune -f --filter "until=168h"

@@ -58,7 +58,8 @@ public class SecurityConfig {
                                 "/api/email/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                                "/docs/**"
                         ).permitAll()
                         //나머지는 모두 인증 필요
                         .anyRequest().authenticated()
