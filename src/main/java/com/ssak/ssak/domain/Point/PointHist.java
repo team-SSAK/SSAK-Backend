@@ -34,7 +34,7 @@ public class PointHist extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "COUPON_HIST_ID", nullable = true, foreignKey = @ForeignKey(name = "FK_POINT_USED_COUPON"))
-    private CouponHist couponHist;
+    private CouponHist couponHist=null;
 
     // 쿠폰 사용 빌더
     @Builder(builderMethodName = "couponUseBuilder")
