@@ -1,5 +1,6 @@
 package com.ssak.ssak.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssak.ssak.domain.Point.PointHist;
 import com.ssak.ssak.domain.Point.PointHistRepository;
 import com.ssak.ssak.domain.measurement.Measurement;
@@ -55,12 +56,15 @@ public class MeasurementService {
                     .filename(file.getOriginalFilename())
                     .contentType(MediaType.parseMediaType(file.getContentType()));
 
-            AIResponse response = restClient.post()
+            String rawResponse = restClient.post()
                     .uri("http://ai-model-service:8000/api/predict")
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(builder.build())
                     .retrieve()
-                    .body(AIResponse.class);
+                    .body(String.class);
+            
+            ObjectMapper mapper = new ObjectMapper();
+            AIResponse response = mapper.readValue(rawResponse, AIResponse.class); //직접 파싱
 
             // 유효성 검사
             if (response == null || response.getImageUrl() == null || response.getLeftoverRatio() == null) {
