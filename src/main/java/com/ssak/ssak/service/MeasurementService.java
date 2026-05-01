@@ -45,7 +45,9 @@ public class MeasurementService {
         RestClient restClient = RestClient.create();
 
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
-        builder.part("file", file.getResource()); //파일 리소스 추가
+        builder.part("file", file.getResource()) //파일 리소스 추가
+                .filename(file.getOriginalFilename())
+                .contentType(MediaType.parseMediaType(file.getContentType()));
 
         AIResponse response = restClient.post()
                 .uri("http://ai-model-service:8000/api/predict")
