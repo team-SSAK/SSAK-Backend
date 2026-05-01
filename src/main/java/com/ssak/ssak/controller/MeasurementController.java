@@ -20,6 +20,12 @@ public class MeasurementController {
 
     private final MeasurementService measurementService;
 
+    /**
+     * 잔반을 측정한다
+     * @param userDetails
+     * @param file
+     * @return
+     */
     @PostMapping(value ="/measure", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MeasurementResponse> measureLeftover(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                                @RequestPart("file") MultipartFile file) {
