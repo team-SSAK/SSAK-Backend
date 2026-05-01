@@ -12,6 +12,7 @@ import com.ssak.ssak.exception.CustomException;
 import com.ssak.ssak.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
@@ -37,15 +38,19 @@ public class MeasurementService {
     @Transactional
     public MeasurementResponse measureLeftover(MultipartFile file, Long userId) {
         // 1. RestClient를 사용한 파이썬 AI 모델 서버 통신
+        if (file.isEmpty()) {
+            throw new CustomException(ErrorCode.INCORRECT_IMAGE);
+        }
+
         RestClient restClient = RestClient.create();
 
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("file", file.getResource()); //파일 리소스 추가
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("file", file.getResource()); //파일 리소스 추가
 
         AIResponse response = restClient.post()
                 .uri("http://ai-model-service:8000/api/predict")
                 .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(body)
+                .body(builder.build())
                 .retrieve()
                 .body(AIResponse.class);
 
