@@ -11,8 +11,12 @@ import com.ssak.ssak.domain.user.UserRepository;
 import com.ssak.ssak.exception.CustomException;
 import com.ssak.ssak.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,12 +36,18 @@ public class MeasurementService {
      */
     @Transactional
     public MeasurementResponse measureLeftover(MultipartFile file, Long userId) {
-        // 1. 파이썬 AI 모델 서버로 이미지 전송 및 결과 수신
-        AIResponse response = restTemplate.postForObject(
-                "http://ai-model-service:8000/api/predict",
-                file,
-                AIResponse.class
-        );
+        // 1. RestClient를 사용한 파이썬 AI 모델 서버 통신
+        RestClient restClient = RestClient.create();
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", file.getResource()); //파일 리소스 추가
+
+        AIResponse response = restClient.post()
+                .uri("http://ai-model-service:8000/api/predict")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(body)
+                .retrieve()
+                .body(AIResponse.class);
 
         // 유효성 검사
         if (response == null || response.getImageUrl() == null || response.getLeftoverRatio() == null) {
