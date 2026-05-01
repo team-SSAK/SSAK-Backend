@@ -55,7 +55,8 @@ public enum ErrorCode {
     NOTICE_NOT_FOUND(HttpStatus.BAD_REQUEST, "N001", "해당 공지사항을 찾을 수 없습니다."),
 
     // AI RELATED
-    INCORRECT_RESPONSE(HttpStatus.BAD_REQUEST, "M001", "AI 서버로 부터 올바르지 않은 응답을 받았습니다.");
+    INCORRECT_RESPONSE(HttpStatus.BAD_REQUEST, "M001", "AI 서버로 부터 올바르지 않은 응답을 받았습니다."),
+    INCORRECT_IMAGE(HttpStatus.BAD_REQUEST, "M002", "잔반 이미지가 존재하지 않거나 올바르지 않습니다");
 
     private final HttpStatus httpStatus;
     private final String code;
