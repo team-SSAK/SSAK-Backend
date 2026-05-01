@@ -36,23 +36,22 @@ public class PointHist extends BaseEntity {
     @JoinColumn(name = "COUPON_HIST_ID", nullable = true, foreignKey = @ForeignKey(name = "FK_POINT_USED_COUPON"))
     private CouponHist couponHist=null;
 
-    // 쿠폰 사용 빌더
-    @Builder(builderMethodName = "couponUseBuilder")
-    public PointHist(User user, CouponHist couponHist, int pointAmount) {
+    private PointHist(User user, CouponHist couponHist, int pointAmount, String pointDesc, PointType pointType) {
         this.user = user;
         this.couponHist = couponHist;
         this.pointAmount = pointAmount;
-        this.pointDesc = couponHist.getCoupon().getCouponName() + " 교환";
-        this.pointType = PointType.USE;
+        this.pointDesc = pointDesc;
+        this.pointType = pointType;
     }
 
-    // 포인트 적립 빌더
-    @Builder(builderMethodName = "savePointBuilder")
-    public PointHist(User user, int pointAmount, String pointDesc) {
-        this.user = user;
-        this.pointAmount = pointAmount;
-        this.pointDesc = pointDesc;
-        this.pointType = PointType.SAVE;
-        this.couponHist = null;
+    // 쿠폰 사용
+    public static PointHist pointUseForCoupon(User user, CouponHist couponHist, int pointAmount) {
+        String desc = couponHist.getCoupon().getCouponName() + " 교환";
+        return new PointHist(user, couponHist, pointAmount, desc, PointType.USE);
+    }
+
+    // 포인트 적립
+    public static PointHist savePoint(User user, int pointAmount, String pointDesc) {
+        return new PointHist(user, null, pointAmount, pointDesc, PointType.SAVE);
     }
 }

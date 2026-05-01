@@ -90,11 +90,11 @@ public class MeasurementService {
             measurementRepository.save(measurement);
 
             // 5. 포인트 내역에 저장
-            PointHist pointHist = PointHist.savePointBuilder()
-                    .user(user)
-                    .pointAmount(addedPoints) // int 타입
-                    .pointDesc("잔반 인증 완료 " + (int) (leftoverRatio * 100) + "%") // String 타입
-                    .build();
+            PointHist pointHist = PointHist.savePoint(
+                    user,
+                    addedPoints,
+                    "잔반 인증 완료 " + (int) (leftoverRatio * 100) + "%"
+            );
             pointHistRepository.save(pointHist);
 
             return MeasurementResponse.from(measurement, addedPoints, user.getCurrentPoint());
