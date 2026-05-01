@@ -13,10 +13,9 @@ import com.ssak.ssak.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,52 +41,63 @@ public class MeasurementService {
             throw new CustomException(ErrorCode.INCORRECT_IMAGE);
         }
 
-        RestClient restClient = RestClient.create();
+        try {
+            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+            factory.setConnectTimeout(5000);  // 연결 타임아웃 5초
+            factory.setReadTimeout(10000);    // 읽기 타임아웃 10초
 
-        MultipartBodyBuilder builder = new MultipartBodyBuilder();
-        builder.part("file", file.getResource()) //파일 리소스 추가
-                .filename(file.getOriginalFilename())
-                .contentType(MediaType.parseMediaType(file.getContentType()));
+            RestClient restClient = RestClient.builder()
+                    .requestFactory(factory)
+                    .build();
 
-        AIResponse response = restClient.post()
-                .uri("http://ai-model-service:8000/api/predict")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(builder.build())
-                .retrieve()
-                .body(AIResponse.class);
+            MultipartBodyBuilder builder = new MultipartBodyBuilder();
+            builder.part("file", file.getResource())
+                    .filename(file.getOriginalFilename())
+                    .contentType(MediaType.parseMediaType(file.getContentType()));
 
-        // 유효성 검사
-        if (response == null || response.getImageUrl() == null || response.getLeftoverRatio() == null) {
-            throw new CustomException(ErrorCode.INCORRECT_RESPONSE);
+            AIResponse response = restClient.post()
+                    .uri("http://ai-model-service:8000/api/predict")
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(builder.build())
+                    .retrieve()
+                    .body(AIResponse.class);
+
+            // 유효성 검사
+            if (response == null || response.getImageUrl() == null || response.getLeftoverRatio() == null) {
+                throw new CustomException(ErrorCode.INCORRECT_RESPONSE);
+            }
+
+            String imgUrl = response.getImageUrl();
+            Double leftoverRatio = response.getLeftoverRatio();
+
+            // 2. Ratio에 따른 포인트 계산
+            int addedPoints = calculatePoints(leftoverRatio);
+
+            // 3. 사용자 포인트 업데이트
+            User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+            user.addPoint(addedPoints);
+
+            // 4. 인식 기록 저장
+            Measurement measurement = Measurement.builder()
+                    .user(user)
+                    .mmPhotoUrl(imgUrl)
+                    .leftoverRatio(leftoverRatio)
+                    .build();
+            measurementRepository.save(measurement);
+
+            // 5. 포인트 내역에 저장
+            PointHist pointHist = PointHist.savePointBuilder()
+                    .user(user)
+                    .pointAmount(addedPoints) // int 타입
+                    .pointDesc("잔반 인증 완료 " + (int) (leftoverRatio * 100) + "%") // String 타입
+                    .build();
+            pointHistRepository.save(pointHist);
+
+            return MeasurementResponse.from(measurement, addedPoints, user.getCurrentPoint());
+        }catch (Exception e) {
+            System.out.println("에러 발생: " + e.getMessage());
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
-
-        String imgUrl = response.getImageUrl();
-        Double leftoverRatio = response.getLeftoverRatio();
-
-        // 2. Ratio에 따른 포인트 계산
-        int addedPoints = calculatePoints(leftoverRatio);
-
-        // 3. 사용자 포인트 업데이트
-        User user = userRepository.findById(userId).orElseThrow(() ->  new CustomException(ErrorCode.USER_NOT_FOUND));
-        user.addPoint(addedPoints);
-
-        // 4. 인식 기록 저장
-        Measurement measurement = Measurement.builder()
-                .user(user)
-                .mmPhotoUrl(imgUrl)
-                .leftoverRatio(leftoverRatio)
-                .build();
-        measurementRepository.save(measurement);
-
-        // 5. 포인트 내역에 저장
-        PointHist pointHist = PointHist.savePointBuilder()
-                .user(user)
-                .pointAmount(addedPoints) // int 타입
-                .pointDesc("잔반 인증 완료 " + (int) (leftoverRatio * 100) + "%") // String 타입
-                .build();
-        pointHistRepository.save(pointHist);
-
-        return MeasurementResponse.from(measurement, addedPoints, user.getCurrentPoint());
     }
 
     /**
