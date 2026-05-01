@@ -55,6 +55,11 @@ public class User extends BaseEntity {
         if(userProfileImg != null) this.userProfileImg = userProfileImg;
     }
 
+    // 닉네임 수정
+    public void updateNickname(String nickname) {
+        this.userNm = nickname;
+    }
+
     // 포인트 추가
     public void addPoint(int point) {
         this.currentPoint += point;

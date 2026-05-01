@@ -124,4 +124,33 @@ public class UserService {
         );
         return NotificationResponse.from(noti);
     }
+
+    /**
+     * 처음 소셜 로그인으로 가입한 사용자의 정보를 업데이트 한다
+     * @param userId
+     * @param request
+     * @return
+     */
+    @Transactional
+    public CreateDetailResponse createDetails(Long userId, CreateDetailRequest request) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 1. 닉네임 수정
+        user.updateNickname(request.getUserNm());
+
+        // 2. 사용자 마케팅 수신 여부 notification 테이블에 저장
+        Notification savedNotification = Notification.builder()
+                .user(user)
+                .communityNotiYn(true)
+                .eventNotiYn(request.isMarketingAgreeYn())
+                .nightNotiYn(request.isMarketingAgreeYn())
+                .build();
+        notificationRepository.save(savedNotification);
+
+        return CreateDetailResponse.builder()
+                .userId(user.getUserId())
+                .nickname(request.getUserNm())
+                .marketingAgreeYn(request.isMarketingAgreeYn())
+                .build();
+    }
 }
