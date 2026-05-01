@@ -34,7 +34,7 @@ public class MeasurementService {
     public MeasurementResponse measureLeftover(MultipartFile file, Long userId) {
         // 1. 파이썬 AI 모델 서버로 이미지 전송 및 결과 수신
         AIResponse response = restTemplate.postForObject(
-                "http://ai-model-service:8080/api/predict",
+                "http://ai-model-service:8000/api/predict",
                 file,
                 AIResponse.class
         );

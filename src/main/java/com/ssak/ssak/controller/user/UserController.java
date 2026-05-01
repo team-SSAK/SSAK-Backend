@@ -87,4 +87,10 @@ public class UserController {
         return ResponseEntity.ok(userService.updateNotificationYN(userDetails.getUserId(), request));
     }
 
+    @PostMapping("/create-details")
+    public ResponseEntity<CreateDetailResponse> createDetails(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                              @RequestBody CreateDetailRequest request) {
+        return ResponseEntity.ok(userService.createDetails(userDetails.getUserId(), request));
+    }
+
 }
