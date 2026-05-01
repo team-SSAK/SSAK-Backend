@@ -44,8 +44,8 @@ public class MeasurementService {
 
         try {
             SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(5000);  // 연결 타임아웃 5초
-            factory.setReadTimeout(10000);    // 읽기 타임아웃 10초
+            factory.setConnectTimeout(10000);  // 연결 타임아웃 5초
+            factory.setReadTimeout(60000);    // 읽기 타임아웃 10초
 
             RestClient restClient = RestClient.builder()
                     .requestFactory(factory)
@@ -62,7 +62,7 @@ public class MeasurementService {
                     .body(builder.build())
                     .retrieve()
                     .body(String.class);
-            
+
             ObjectMapper mapper = new ObjectMapper();
             AIResponse response = mapper.readValue(rawResponse, AIResponse.class); //직접 파싱
 
