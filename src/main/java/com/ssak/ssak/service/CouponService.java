@@ -136,11 +136,11 @@ public class CouponService {
         couponHistRepository.save(couponHist);
 
         // 4. 포인트 사용이력에 추가
-        PointHist pointHist = PointHist.couponUseBuilder()
-                .user(user)
-                .couponHist(couponHist)
-                .pointAmount(coupon.getCouponPoint())
-                .build();
+        PointHist pointHist = PointHist.pointUseForCoupon(
+                user,
+                couponHist,
+                coupon.getCouponPoint()
+        );
         pointHistRepository.save(pointHist);
 
         return CouponExchangeResponse.from(coupon, user);
