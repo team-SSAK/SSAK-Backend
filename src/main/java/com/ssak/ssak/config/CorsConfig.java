@@ -25,7 +25,8 @@ public class CorsConfig {
                 "http://localhost:8081",          // 프론트 테스트
                 "http://localhost:8080",          // 로컬 테스트 서버
                 "https://seederslab.n-e.kr",       // 배포 서버
-                "https://ssak--fwdv0q1ejo.expo.app" // 프론트 배포 서버
+                "https://ssak--fwdv0q1ejo.expo.app", // 프론트 배포 서버
+                "https://appleid.apple.com"         // Apple 로그인의 form_post 요청
         );
         configuration.setAllowedOrigins(allowedOrigins);
 

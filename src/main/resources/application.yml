@@ -84,7 +84,7 @@ spring:
 apple:
   team-id: ${apple.team-id}
   key-id: ${apple.key-id}
-  key-path: AuthKey.p8
+  key-path: ${apple.key-path}
 
 # 로깅 설정
 logging:
