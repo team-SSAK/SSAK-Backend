@@ -40,7 +40,7 @@ public class AppleOAuthController {
         response.sendRedirect(url);
     }
 
-    @PostMapping(value = "/login/oauth2/code/apple", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @PostMapping(value = "/login/oauth2/code/apple/callback", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public void appleCallback(
             @RequestParam("code") String code,
             @RequestParam(value = "user", required = false) String userJson,  // 첫 로그인 시 넘어올 수 있는 유저 정보
