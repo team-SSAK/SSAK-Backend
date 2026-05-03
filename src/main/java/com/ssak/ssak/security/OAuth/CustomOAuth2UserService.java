@@ -2,17 +2,16 @@ package com.ssak.ssak.security.OAuth;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ssak.ssak.domain.user.LoginType;
 import com.ssak.ssak.domain.user.User;
 import com.ssak.ssak.domain.user.UserRepository;
-import com.ssak.ssak.exception.ErrorCode;
 import com.ssak.ssak.security.CustomUserDetails;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -182,7 +181,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private String createClientSecret() {
         try {
-            ClassPathResource resource = new ClassPathResource(appleKeyPath);
+            String cleanPath = appleKeyPath.startsWith("file:") ? appleKeyPath.substring(5) : appleKeyPath;
+            Resource resource = new FileSystemResource(cleanPath);
             String keyContent;
 
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
