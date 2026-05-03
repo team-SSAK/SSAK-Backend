@@ -54,7 +54,7 @@ spring:
               - email
           apple:
             client-id: ${apple.client.id}
-            client-secret: ${apple.client.secret}
+            client-secret: DUMMY_SECRET_FOR_APPLE
             redirect-uri: ${apple.redirect-uri}
             authorization-grant-type: authorization_code
             client-authentication-method: client_secret_post
@@ -79,6 +79,12 @@ spring:
       host: ${redis.host}
       port: ${redis.port}
       password: ${redis.password}
+
+# Apple 인증에만 필요한 커스텀 속성 분리
+apple:
+  team-id: ${apple.team-id}
+  key-id: ${apple.key-id}
+  key-path: AuthKey.p8
 
 # 로깅 설정
 logging:
