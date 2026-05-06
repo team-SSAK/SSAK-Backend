@@ -21,16 +21,28 @@ public class RestaurantResponse {
     private RestaurantType restaurantType;
     private LocalTime openTime;
     private LocalTime closeTime;
-    private Point restaurantCoord;
     private String restaurantImgUrl;
+    private Double latitude;
+    private Double longitude;
 
     public static RestaurantResponse from(Restaurant restaurant) {
+        Double latitude = null;
+        Double longitude = null;
+
+        if (restaurant.getRestaurantCoord() != null) {
+            // Point 객체의 위도와 경도값 추출
+            latitude = restaurant.getRestaurantCoord().getY();
+            longitude = restaurant.getRestaurantCoord().getX();
+        }
         return RestaurantResponse.builder()
                 .restaurantId(restaurant.getRestaurantId())
                 .restaurantName(restaurant.getRestaurantName())
                 .restaurantLocation(restaurant.getRestaurantLocation())
                 .restaurantType(restaurant.getRestaurantType())
-                .restaurantCoord(restaurant.getRestaurantCoord())
+                .openTime(restaurant.getOpenTime())
+                .closeTime(restaurant.getCloseTime())
+                .latitude(latitude)
+                .longitude(longitude)
                 .restaurantImgUrl(restaurant.getRestaurantImgUrl())
                 .build();
     }

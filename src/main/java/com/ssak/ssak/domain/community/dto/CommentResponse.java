@@ -25,11 +25,17 @@ public class CommentResponse {
     private List<CommentResponse> childrenComments;
 
     public static CommentResponse from(Comment comment) {
+
+        String nickname = null;
+        if (comment.getUser() != null) {
+            nickname = comment.getUser().getUserNm();
+        }
+
         return CommentResponse.builder()
                 .commentId(comment.getCommentId())
                 .commentContent(comment.getCommentContent())
                 .commentVisibility(comment.getCommentVisibility())
-                .nickname(comment.getUser().getUserNm())
+                .nickname(nickname)
                 .commentCreateTime(comment.getCreatedAt())
                 .childrenComments(comment.getChildren().stream()
                         .map(CommentResponse::from)

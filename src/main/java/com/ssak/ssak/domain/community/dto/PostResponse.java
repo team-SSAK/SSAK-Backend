@@ -27,13 +27,21 @@ public class PostResponse {
     private List<CommentResponse> comments;
 
     public static PostResponse from(Post post, List<String> imageUrls, List<CommentResponse> comments) {
+        // 1. 닉네임 기본값 설정
+        String nickname = "탈퇴한 사용자";
+
+        // 2. post.getUser()가 null이 아닌 경우에만 닉네임 가져오기
+        if (post.getUser() != null) {
+            nickname = post.getUser().getUserNm();
+        }
+
         return PostResponse.builder()
                 .postId(post.getPostId())
                 .postVisibility(post.getPostVisibility())
                 .postTitle(post.getPostTitle())
                 .postContent(post.getPostContent())
                 .postCreateTime(post.getCreatedAt())
-                .nickname(post.getUser().getUserNm())
+                .nickname(nickname)
                 .postLikeCnt(post.getPostLikeCnt())
                 .postCommentCnt(post.getPostCommentCnt())
                 .imageUrls(imageUrls)
