@@ -23,12 +23,17 @@ public class PostListResponse {
     private int postCommentCnt;
 
     public static PostListResponse from(Post post) {
+        String userNm = null;
+
+        if (post.getUser() != null) {
+            userNm = post.getUser().getUserNm();
+        }
         return PostListResponse.builder()
                 .postId(post.getPostId())
                 .postTitle(post.getPostTitle())
                 .postContent(post.getPostContent())
                 .postVisibility(post.getPostVisibility())
-                .nickname(post.getUser().getUserNm())
+                .nickname(userNm)
                 .postCreateTime(post.getCreatedAt())
                 .postLikeCnt(post.getPostLikeCnt())
                 .postCommentCnt(post.getPostCommentCnt())

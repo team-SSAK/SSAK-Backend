@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class CouponListResponse {
+    private Long couponId;
     private String couponImgUrl;
     private String couponName;
     private int couponPoint;
@@ -20,6 +21,7 @@ public class CouponListResponse {
 
     public static CouponListResponse from(Coupon coupon) {
         return CouponListResponse.builder()
+                .couponId(coupon.getCouponId())
                 .couponImgUrl(coupon.getCouponImgUrl())
                 .couponName(coupon.getCouponName())
                 .couponPoint(coupon.getCouponPoint())

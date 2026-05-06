@@ -87,6 +87,12 @@ public class UserController {
         return ResponseEntity.ok(userService.updateNotificationYN(userDetails.getUserId(), request));
     }
 
+    /**
+     * 처음 가입한 사용자의 정보 수정
+     * @param userDetails
+     * @param request
+     * @return
+     */
     @PostMapping("/create-details")
     public ResponseEntity<CreateDetailResponse> createDetails(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                               @RequestBody CreateDetailRequest request) {
