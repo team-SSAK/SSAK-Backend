@@ -1,6 +1,7 @@
 package com.ssak.ssak.domain.coupon.dto;
 
 import com.ssak.ssak.domain.coupon.Coupon;
+import com.ssak.ssak.domain.coupon.CouponHist;
 import com.ssak.ssak.domain.user.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,9 +21,9 @@ public class CouponExchangeResponse {
     int remainingPoint;
     LocalDateTime expirationDate;
 
-    public static CouponExchangeResponse from (Coupon coupon, User user) {
+    public static CouponExchangeResponse from (Coupon coupon, User user, CouponHist couponHist) {
         return CouponExchangeResponse.builder()
-                .couponId(coupon.getCouponId())
+                .couponId(couponHist.getCouponHistId())
                 .couponName(coupon.getCouponName())
                 .spentPoint(coupon.getCouponPoint())
                 .remainingPoint(user.getCurrentPoint())

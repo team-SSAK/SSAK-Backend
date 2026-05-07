@@ -143,7 +143,7 @@ public class CouponService {
         );
         pointHistRepository.save(pointHist);
 
-        return CouponExchangeResponse.from(coupon, user);
+        return CouponExchangeResponse.from(coupon, user, couponHist);
     }
 
     public CouponUseResponse useCoupon(Long userId, CouponUseRequest request) {
