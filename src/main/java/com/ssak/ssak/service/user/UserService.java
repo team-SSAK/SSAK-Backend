@@ -138,7 +138,10 @@ public class UserService {
         // 1. 닉네임 수정
         user.updateNickname(request.getUserNm());
 
-        // 2. 사용자 마케팅 수신 여부 notification 테이블에 저장
+        // 2. 사용자 회원가입 완료 처리
+        user.completeSignup();
+
+        // 3. 사용자 마케팅 수신 여부 notification 테이블에 저장
         Notification savedNotification = Notification.builder()
                 .user(user)
                 .communityNotiYn(true)

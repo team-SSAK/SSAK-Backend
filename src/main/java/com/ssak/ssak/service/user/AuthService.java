@@ -94,6 +94,7 @@ public class AuthService {
                 .userPw(encodedPassword)
                 .userNm(request.getUserNm())
                 .loginType(LoginType.NORMAL)
+                .signupStatus(SignupStatus.ACTIVE)
                 .build();
 
         // 5. 데이터베이스에 저장

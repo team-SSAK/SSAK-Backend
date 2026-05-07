@@ -24,6 +24,11 @@ public class RestaurantService {
     private final RestaurantRepository restaurantRepository;
     private final MenuRepository menuRepository;
 
+    /**
+     * 사용자가 찜한 식당 목록을 조회한다
+     * @param userId
+     * @return
+     */
     @Transactional(readOnly = true)
     public List<RestaurantListResponse> getRestaurantList(Long userId) {
         List<Restaurant> restaurants = restaurantRepository.findAll();
@@ -95,6 +100,7 @@ public class RestaurantService {
      * @param restId
      * @return
      */
+    @Transactional(readOnly = true)
     public List<MenuResponse> getTodayMenu(Long restId) {
         Restaurant restaurant = restaurantRepository.findById(restId).orElseThrow(() -> new CustomException(ErrorCode.RESTAURANT_NOT_FOUND));
 

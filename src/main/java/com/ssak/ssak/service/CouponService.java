@@ -105,6 +105,7 @@ public class CouponService {
      * @param couponId
      * @return
      */
+    @Transactional(readOnly = true)
     public CouponResponse getCouponDetail(Long couponId) {
         Coupon coupon = couponRepository.findById(couponId).orElseThrow(() -> new CustomException(ErrorCode.COUPON_NOT_FOUND));
         return CouponResponse.from(coupon);
@@ -116,6 +117,7 @@ public class CouponService {
      * @param exchangeCouponId
      * @return
      */
+    @Transactional
     public CouponExchangeResponse exchangeIntoCoupon(Long userId, Long exchangeCouponId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         Coupon coupon = couponRepository.findById(exchangeCouponId).orElseThrow(() -> new CustomException(ErrorCode.COUPON_NOT_FOUND));
@@ -146,6 +148,7 @@ public class CouponService {
         return CouponExchangeResponse.from(coupon, user, couponHist);
     }
 
+    @Transactional
     public CouponUseResponse useCoupon(Long userId, CouponUseRequest request) {
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         CouponHist couponHist = couponHistRepository.findById(request.getCouponHistId()).orElseThrow(() -> new CustomException(ErrorCode.INVALID_COUPON));

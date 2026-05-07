@@ -7,6 +7,7 @@ import com.ssak.ssak.domain.measurement.Measurement;
 import com.ssak.ssak.domain.measurement.MeasurementRepository;
 import com.ssak.ssak.domain.measurement.dto.AIResponse;
 import com.ssak.ssak.domain.measurement.dto.MeasurementResponse;
+import com.ssak.ssak.domain.measurement.dto.MeasurementValidResponse;
 import com.ssak.ssak.domain.user.User;
 import com.ssak.ssak.domain.user.UserRepository;
 import com.ssak.ssak.exception.CustomException;
@@ -20,6 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -44,8 +48,8 @@ public class MeasurementService {
 
         try {
             SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(10000);  // 연결 타임아웃 5초
-            factory.setReadTimeout(60000);    // 읽기 타임아웃 10초
+            factory.setConnectTimeout(10000);  // 연결 타임아웃 10초
+            factory.setReadTimeout(60000);    // 읽기 타임아웃 1분
 
             RestClient restClient = RestClient.builder()
                     .requestFactory(factory)
@@ -114,14 +118,43 @@ public class MeasurementService {
 
         double percentage = leftoverRatio * 100.0;
 
-        if (percentage > 80 && percentage <= 100) {
-            return 1000;
-        } else if (percentage > 70 && percentage <= 80) {
-            return 50;
-        } else if (percentage > 50 && percentage <= 70) {
-            return 10;
+        if (percentage >= 85 && percentage <= 100) {
+            return 100;
+        } else if (percentage > 50 && percentage < 85) {
+            return (int)percentage;
+        } else if (percentage > 10 && percentage <= 50) {
+            return (int) (percentage / 2);
         } else {
-            return 0;
+            return 1;
         }
+    }
+
+    /**
+     * 인증할 수 있는지 여부를 확인합니다.
+     * @param userId
+     * @return
+     */
+    @Transactional
+    public MeasurementValidResponse validateMeasurement(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
+
+        // 1. 오늘 인증 횟수 모두 소진했는지 확인
+        int todayCount = measurementRepository.countByUserUserIdAndCreatedAtAfter(userId, startOfDay);
+        if (todayCount >= 3) {
+            throw new CustomException(ErrorCode.DAILY_LIMIT_EXCEEDED);
+        }
+
+        // 2. 마지막 인증 후 4시간 이상 지났는지 확인
+        LocalDateTime lastMeasuredDate = measurementRepository.findFirstByUserUserIdOrderByCreatedAtDesc(userId)
+                .map(Measurement::getCreatedAt)
+                .orElse(null);
+        boolean isCoolingDown = (lastMeasuredDate != null) && lastMeasuredDate.plusHours(4).isAfter(now);
+        return MeasurementValidResponse.builder()
+                .isValid(!isCoolingDown)
+                .lastMeasuredDate(lastMeasuredDate)
+                .build();
     }
 }

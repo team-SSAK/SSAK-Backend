@@ -2,6 +2,7 @@ package com.ssak.ssak.security.OAuth;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ssak.ssak.domain.user.SignupStatus;
 import com.ssak.ssak.domain.user.User;
 import com.ssak.ssak.domain.user.UserRepository;
 import com.ssak.ssak.security.CustomUserDetails;
@@ -80,7 +81,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Optional<User> optionalUser = userRepository.findByUserEmail(oAuth2UserInfo.getEmail());
 
         // 신규 회원 여부 판단
-        boolean isNewUser = optionalUser.isEmpty();
+        boolean isNew = optionalUser.isEmpty();
+        boolean isPendingUser = optionalUser.isPresent() && optionalUser.get().getSignupStatus() == SignupStatus.PENDING;
+
+        boolean isNewUser = isNew || isPendingUser;
 
         User user = optionalUser.orElseGet(() -> createUser(oAuth2UserInfo));
 
@@ -158,7 +162,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             Optional<User> optionalUser = userRepository.findByUserEmail(oAuth2UserInfo.getEmail());
 
             // 신규 회원 여부 판단
-            boolean isNewUser = optionalUser.isEmpty();
+            boolean isNew = optionalUser.isEmpty();
+            boolean isPendingUser = optionalUser.isPresent() && optionalUser.get().getSignupStatus() == SignupStatus.PENDING;
+
+            boolean isNewUser = isNew || isPendingUser;
 
             User user = optionalUser.orElseGet(() -> createUser(oAuth2UserInfo));
 
