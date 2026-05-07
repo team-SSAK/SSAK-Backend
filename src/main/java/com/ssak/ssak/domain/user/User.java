@@ -36,6 +36,7 @@ public class User extends BaseEntity {
     @Column(name = "USER_PROFILE_IMG", nullable = true)
     private String userProfileImg;  // 사용자의 프로필 이미지
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "SIGNUP_ST")
     private SignupStatus signupStatus = SignupStatus.PENDING;
 
