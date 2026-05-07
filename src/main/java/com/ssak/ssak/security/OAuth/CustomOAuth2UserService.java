@@ -105,6 +105,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .userNm("사용자" + System.currentTimeMillis())
                 .loginType(oAuth2UserInfo.getProvider())
                 .providerId(oAuth2UserInfo.getProviderId())
+                .signupStatus(SignupStatus.PENDING)
                 .userPw(null)
                 .build();
 
