@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class CouponStore extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    //@Column(name = "COUPON_STORE_ID")
     private Long id;
 
     @Column(name = "COUPON_STORE_NM")

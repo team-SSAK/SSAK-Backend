@@ -36,23 +36,32 @@ public class User extends BaseEntity {
     @Column(name = "USER_PROFILE_IMG", nullable = true)
     private String userProfileImg;  // 사용자의 프로필 이미지
 
+    @Column(name = "SIGNUP_ST")
+    private SignupStatus signupStatus = SignupStatus.PENDING;
+
     public void changePassword(String newPassword) {
         this.userPw = newPassword;
     }
 
     @Builder
-    public User(String userEmail, String userPw, String userNm, LoginType loginType, String providerId) {
+    public User(String userEmail, String userPw, String userNm, LoginType loginType, String providerId, SignupStatus signupStatus) {
         this.userEmail = userEmail;
         this.userPw = userPw;
         this.userNm = userNm;
         this.loginType = loginType;
         this.providerId = providerId;
+        this.signupStatus = signupStatus;
     }
 
     // 프로필 수정
     public void modifyProfile(String userNm, String userProfileImg) {
         if(userNm != null) this.userNm = userNm;
         if(userProfileImg != null) this.userProfileImg = userProfileImg;
+    }
+
+    // 회원가입 완료 처리
+    public void completeSignup() {
+        this.signupStatus = SignupStatus.ACTIVE;
     }
 
     // 닉네임 수정

@@ -11,6 +11,7 @@ import com.ssak.ssak.exception.CustomException;
 import com.ssak.ssak.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,6 +27,7 @@ public class PointService {
      * @param userId
      * @return
      */
+    @Transactional(readOnly = true)
     public List<PointHistResponse> getMyPointHist(Long userId, PointType option) {
         List<PointHist> pointHists = (option == null)
                 ? pointHistRepository.findAllByUser_UserIdOrderByCreatedAtDesc(userId)
@@ -40,6 +42,7 @@ public class PointService {
      * @param userId
      * @return
      */
+    @Transactional(readOnly = true)
     public PointCurrentResponse getUserCurrentPoint(Long userId) {
         User user = userRepository.findByUserId(userId).orElseThrow(()-> new CustomException(ErrorCode.USER_NOT_FOUND));
         return PointCurrentResponse.from(user);

@@ -348,6 +348,7 @@ public class PostService {
      * @param userId
      * @return
      */
+    @Transactional
     public String reportPost(Long postId, ReportRequest request, Long userId) {
         Post post =  postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         if(!userRepository.existsById(userId)) {
@@ -377,6 +378,14 @@ public class PostService {
         return "신고가 정상적으로 접수되었습니다.";
     }
 
+    /**
+     * 특정 댓글을 신고한다.
+     * @param commentId
+     * @param request
+     * @param userId
+     * @return
+     */
+    @Transactional
     public String reportComment(Long commentId, ReportRequest request, Long userId) {
         Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
         if(!userRepository.existsById(userId)) {

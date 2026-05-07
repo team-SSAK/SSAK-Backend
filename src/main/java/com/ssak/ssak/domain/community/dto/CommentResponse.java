@@ -19,6 +19,7 @@ public class CommentResponse {
     private String commentContent;
     private Boolean commentVisibility;
     private String nickname;
+    private int commentLikeCnt;
     private LocalDateTime commentCreateTime;
 
     // 대댓글 리스트를 담을 필드
@@ -36,6 +37,7 @@ public class CommentResponse {
                 .commentContent(comment.getCommentContent())
                 .commentVisibility(comment.getCommentVisibility())
                 .nickname(nickname)
+                .commentLikeCnt(comment.getCommentLikeCnt())
                 .commentCreateTime(comment.getCreatedAt())
                 .childrenComments(comment.getChildren().stream()
                         .map(CommentResponse::from)

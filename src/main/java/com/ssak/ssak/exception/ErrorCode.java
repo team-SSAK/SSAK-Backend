@@ -56,7 +56,9 @@ public enum ErrorCode {
 
     // AI RELATED
     INCORRECT_RESPONSE(HttpStatus.BAD_REQUEST, "M001", "AI 서버로 부터 올바르지 않은 응답을 받았습니다."),
-    INCORRECT_IMAGE(HttpStatus.BAD_REQUEST, "M002", "잔반 이미지가 존재하지 않거나 올바르지 않습니다");
+    INCORRECT_IMAGE(HttpStatus.BAD_REQUEST, "M002", "잔반 이미지가 존재하지 않거나 올바르지 않습니다"),
+    DAILY_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "M003", "오늘 인증횟수를 모두 사용했습니다"),
+    COOL_DOWN_PERIOD_LEFT(HttpStatus.BAD_REQUEST, "M004", "인증은 4시간 간격으로 가능합니다");
 
     private final HttpStatus httpStatus;
     private final String code;
