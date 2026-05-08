@@ -23,8 +23,8 @@ public class Measurement extends BaseEntity {
     @Column(name = "LEFTOVER_RATIO")
     private Double leftoverRatio;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "USER_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_USER_MEASURED"))
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "USER_ID", nullable = true, foreignKey = @ForeignKey(name = "FK_USER_MEASURED"))
     private User user;
 
     @Builder
