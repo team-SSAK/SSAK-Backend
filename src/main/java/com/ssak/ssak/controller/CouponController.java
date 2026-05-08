@@ -60,8 +60,9 @@ public class CouponController {
      * @return
      */
     @GetMapping
-    public ResponseEntity<List<CouponListResponse>> getCouponList(@RequestParam(required = false) CouponType type) {
-        return ResponseEntity.ok(couponService.getCouponList(type));
+    public ResponseEntity<List<CouponListResponse>> getCouponList(@RequestParam(required = false) CouponType type,
+                                                                  @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(couponService.getCouponList(type, userDetails.getUserId()));
     }
 
     /**

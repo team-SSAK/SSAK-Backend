@@ -18,8 +18,9 @@ public class CouponListResponse {
     private int couponPoint;
     private CouponType couponType;
     private String couponStore;
+    private boolean wished;
 
-    public static CouponListResponse from(Coupon coupon) {
+    public static CouponListResponse from(Coupon coupon, boolean wished) {
         return CouponListResponse.builder()
                 .couponId(coupon.getCouponId())
                 .couponImgUrl(coupon.getCouponImgUrl())
@@ -27,6 +28,7 @@ public class CouponListResponse {
                 .couponPoint(coupon.getCouponPoint())
                 .couponType(coupon.getCouponType())
                 .couponStore(coupon.getCouponStore().getCouponStoreName())
+                .wished(wished)
                 .build();
     }
 }

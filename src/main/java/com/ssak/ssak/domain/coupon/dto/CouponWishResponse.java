@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class CouponWishResponse {
     private Long couponWishId;
+    private Long couponId;
     private String couponNm;
     private String couponStore;
     private int couponPoint;
@@ -20,6 +21,7 @@ public class CouponWishResponse {
     public static CouponWishResponse from(CouponWish couponWish) {
         return CouponWishResponse.builder()
                 .couponWishId(couponWish.getCouponWishId())
+                .couponId(couponWish.getCoupon().getCouponId())
                 .couponNm(couponWish.getCoupon().getCouponName())
                 .couponStore(couponWish.getCoupon().getCouponStore().getCouponStoreName())
                 .couponPoint(couponWish.getCoupon().getCouponPoint())
