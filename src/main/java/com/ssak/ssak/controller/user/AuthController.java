@@ -36,7 +36,7 @@ public class AuthController {
      * @param refreshToken
      * @return
      */
-    @PostMapping("/reissue")
+    @PostMapping("/refresh")
     public ResponseEntity<TokenResponse> reissueToken(@RequestHeader("Refresh-Token") String refreshToken) {
         return ResponseEntity.ok(authService.reissue(refreshToken));
     }

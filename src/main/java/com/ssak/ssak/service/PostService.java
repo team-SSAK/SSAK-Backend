@@ -330,7 +330,7 @@ public class PostService {
         Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if(!comment.getPost().getUser().equals(user)) {
+        if(!comment.getUser().equals(user)) {
             throw new CustomException(ErrorCode.NOT_COMMENT_OWNER);
         }
         commentRepository.delete(comment);
