@@ -1,5 +1,6 @@
 package com.ssak.ssak.service.user;
 
+import com.ssak.ssak.domain.Point.PointHist;
 import com.ssak.ssak.domain.user.*;
 import com.ssak.ssak.domain.user.dto.*;
 import com.ssak.ssak.exception.CustomException;
@@ -149,6 +150,14 @@ public class UserService {
                 .nightNotiYn(request.isMarketingAgreeYn())
                 .build();
         notificationRepository.save(savedNotification);
+
+        // 4. 가입 축하 200p 부여
+        user.addPoint(200);
+        PointHist pointHist = PointHist.savePoint(
+                user,
+                200,
+                "가입 축하 이벤트"
+        );
 
         return CreateDetailResponse.builder()
                 .userId(user.getUserId())

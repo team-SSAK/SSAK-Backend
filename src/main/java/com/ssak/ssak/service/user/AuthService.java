@@ -1,5 +1,6 @@
 package com.ssak.ssak.service.user;
 
+import com.ssak.ssak.domain.Point.PointHist;
 import com.ssak.ssak.domain.Point.PointHistRepository;
 import com.ssak.ssak.domain.community.CommentLikeRepository;
 import com.ssak.ssak.domain.community.CommentRepository;
@@ -7,6 +8,7 @@ import com.ssak.ssak.domain.community.PostLikeRepository;
 import com.ssak.ssak.domain.community.PostRepository;
 import com.ssak.ssak.domain.coupon.CouponHistRepository;
 import com.ssak.ssak.domain.coupon.CouponWishRepository;
+import com.ssak.ssak.domain.measurement.MeasurementRepository;
 import com.ssak.ssak.domain.restaurant.RestaurantWishRepository;
 import com.ssak.ssak.domain.user.*;
 import com.ssak.ssak.domain.user.dto.*;
@@ -54,6 +56,7 @@ public class AuthService {
     private final CommentRepository commentRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentLikeRepository commentLikeRepository;
+    private final MeasurementRepository measurementRepository;
 
     @Value("${jwt.refresh-expiration}")
     private Long refreshExpiration;
@@ -111,6 +114,15 @@ public class AuthService {
 
         // 7. 인증정보 Redis에서 제거
         emailVerificationService.clearVerification(request.getUserEmail(), EmailVerificationType.SIGNUP);
+
+        // 8. 가입 축하 200p
+        user.addPoint(200);
+        PointHist pointHist = PointHist.savePoint(
+                user,
+                200,
+                "가입 축하 이벤트"
+        );
+        pointHistRepository.save(pointHist);
 
         return UserResponse.from(savedUser);
     }
@@ -314,10 +326,15 @@ public class AuthService {
             comment.removeUser();
         });
 
-        // 5. 리프레시 토큰 삭제
+        // 5. 잔반인식 측정내역 유저 제거
+        measurementRepository.findByUser(user).forEach(measurement -> {
+            measurement.removeUser();
+        });
+
+        // 6. 리프레시 토큰 삭제
         redisTemplate.delete("RT:" + email);
 
-        // 6. 유저 삭제
+        // 7. 유저 삭제
         userRepository.deleteById(user.getUserId());
 
         return "회원 탈퇴가 완료되었습니다.";

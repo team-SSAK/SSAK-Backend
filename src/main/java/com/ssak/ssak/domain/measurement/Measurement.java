@@ -33,4 +33,8 @@ public class Measurement extends BaseEntity {
         this.mmPhotoUrl = mmPhotoUrl;
         this.leftoverRatio = leftoverRatio;
     }
+
+    public void removeUser() {
+        this.user = null;
+    }
 }

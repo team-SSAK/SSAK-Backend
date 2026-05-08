@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class CouponHistResponse {
     private Long couponHistId;
+    private Long couponId;
     private String couponNm;
     private String couponStore;
     private int couponPoint;
@@ -23,6 +24,7 @@ public class CouponHistResponse {
     public static CouponHistResponse from(CouponHist couponHist, boolean isWished) {
         return CouponHistResponse.builder()
                 .couponHistId(couponHist.getCouponHistId())
+                .couponId(couponHist.getCoupon().getCouponId())
                 .couponNm(couponHist.getCoupon().getCouponName())
                 .couponStore(couponHist.getCoupon().getCouponStore().getCouponStoreName())
                 .couponPoint(couponHist.getCoupon().getCouponPoint())
