@@ -18,14 +18,16 @@ public class CouponHistResponse {
     private String couponStore;
     private int couponPoint;
     private String couponImgUrl;
+    private boolean couponWished;   // 쿠폰이 찜되어있는가
 
-    public static CouponHistResponse from(CouponHist couponHist) {
+    public static CouponHistResponse from(CouponHist couponHist, boolean isWished) {
         return CouponHistResponse.builder()
                 .couponHistId(couponHist.getCouponHistId())
                 .couponNm(couponHist.getCoupon().getCouponName())
                 .couponStore(couponHist.getCoupon().getCouponStore().getCouponStoreName())
                 .couponPoint(couponHist.getCoupon().getCouponPoint())
                 .couponImgUrl(couponHist.getCoupon().getCouponImgUrl())
+                .couponWished(isWished)
                 .build();
     }
 }

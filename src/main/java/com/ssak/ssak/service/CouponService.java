@@ -13,8 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,11 +37,22 @@ public class CouponService {
      */
     @Transactional(readOnly = true)
     public List<CouponHistResponse> getMyCouponList(Long userId, CouponStatus option) {
-
+        // 1. 해당 유저의 쿠폰 발급 내역 조회
         List<CouponHist> coupons = couponHistRepository.findAllByUser_UserIdAndCouponStatus(userId, option);
 
+        // 2. 해당 유저가 찜한 쿠폰 목록 조회 (set사용)
+        Set<Long> wishedCouponIds = couponWishRepository.findAllByUser_UserId(userId)
+                .stream()
+                .map(wish -> wish.getCoupon().getCouponId())
+                .collect(Collectors.toSet());
+
+        // 3. 발급된 각 쿠폰에 대하여 찜 여부 판단
         return coupons.stream()
-                .map(CouponHistResponse::from)
+                .map(couponHist -> {
+                    Long couponId = couponHist.getCoupon().getCouponId();
+                    boolean isWished = wishedCouponIds.contains(couponId);
+                    return CouponHistResponse.from(couponHist, isWished);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -86,7 +99,7 @@ public class CouponService {
      * @return
      */
     @Transactional(readOnly = true)
-    public List<CouponListResponse> getCouponList(CouponType type) {
+    public List<CouponListResponse> getCouponList(CouponType type, Long userId) {
         // 유효한 쿠폰 전체 조회
         List<Coupon> coupons;
         if(type == null) {
@@ -95,8 +108,18 @@ public class CouponService {
             coupons = couponRepository.findAllByCouponValidTrueAndCouponType(type);
         }
 
+        // 찜 목록 가져오기
+        Set<Long> wishedCouponIds = new HashSet<>();
+        wishedCouponIds = couponWishRepository.findAllByUser_UserId(userId).stream()
+                .map(wish -> wish.getCoupon().getCouponId())
+                .collect(Collectors.toSet());
+
+        Set<Long> finalWishedCouponIds = wishedCouponIds;
         return coupons.stream()
-                .map(CouponListResponse::from)
+                .map(coupon -> {
+                    boolean isWished = finalWishedCouponIds.contains(coupon.getCouponId());
+                    return CouponListResponse.from(coupon, isWished);
+                })
                 .collect(Collectors.toList());
     }
 
