@@ -7,11 +7,13 @@ jobs:
   review:
     runs-on: ubuntu-latest
     permissions:
-      comments: read
+      contents: read
       pull-requests: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 전체 이력을 가져와 Diff 분석을 원활하게 함
 
       - name: AI Code Review
         uses: petarzarkov/gemini-code-review-action@v1.1.3
