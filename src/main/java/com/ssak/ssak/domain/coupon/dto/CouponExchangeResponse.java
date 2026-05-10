@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 @Builder
 public class CouponExchangeResponse {
     Long couponId;
+    Long couponHistId;
     String couponName;
     int spentPoint;
     int remainingPoint;
@@ -24,6 +25,7 @@ public class CouponExchangeResponse {
     public static CouponExchangeResponse from (Coupon coupon, User user, CouponHist couponHist) {
         return CouponExchangeResponse.builder()
                 .couponId(couponHist.getCouponHistId())
+                .couponHistId(couponHist.getCouponHistId())
                 .couponName(coupon.getCouponName())
                 .spentPoint(coupon.getCouponPoint())
                 .remainingPoint(user.getCurrentPoint())
