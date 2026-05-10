@@ -75,13 +75,24 @@ public class CouponController {
         return ResponseEntity.ok(couponService.getCouponDetail(couponId));
     }
 
+    /**
+     * 포인트를 쿠폰으로 교환한다
+     * @param userDetails
+     * @param request
+     * @return
+     */
     @PostMapping("/exchange")
     public ResponseEntity<CouponExchangeResponse> exchangeIntoCoupon(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                                      @RequestBody CouponExchangeRequest request) {
         return ResponseEntity.ok(couponService.exchangeIntoCoupon(userDetails.getUserId(), request.getExchangeCouponId()));
     }
 
-
+    /**
+     * 쿠폰을 사용한다
+     * @param userDetails
+     * @param request
+     * @return
+     */
     @PostMapping("/use")
     public ResponseEntity<CouponUseResponse> useCoupon(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                        @RequestBody CouponUseRequest request) {
