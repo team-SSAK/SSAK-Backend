@@ -71,12 +71,18 @@ public class MeasurementService {
             AIResponse response = mapper.readValue(rawResponse, AIResponse.class); //직접 파싱
 
             // 유효성 검사
-            if (response == null || response.getImageUrl() == null || response.getLeftoverRatio() == null) {
-                throw new CustomException(ErrorCode.INCORRECT_RESPONSE);
-            }
-
+            if (response == null || response.getLeftoverRatio() == null) {
+                throw new CustomException(ErrorCode.INCORRECT_RESPONSE);    
+            }            
+            Double leftoverRatio = response.getLeftoverRatio();            
+            // 식판 인식 실패 / 아무 사진    
+            if (leftoverRatio < 0) {            
+                throw new CustomException(ErrorCode.INCORRECT_IMAGE);       
+            }            
+            if (response.getImageUrl() == null) {            
+                throw new CustomException(ErrorCode.INCORRECT_RESPONSE);           
+            }          
             String imgUrl = response.getImageUrl();
-            Double leftoverRatio = response.getLeftoverRatio();
 
             // 2. Ratio에 따른 포인트 계산
             int addedPoints = calculatePoints(leftoverRatio);
