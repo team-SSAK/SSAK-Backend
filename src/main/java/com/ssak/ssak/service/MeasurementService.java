@@ -108,7 +108,9 @@ public class MeasurementService {
             pointHistRepository.save(pointHist);
 
             return MeasurementResponse.from(measurement, addedPoints, user.getCurrentPoint());
-        }catch (Exception e) {
+        } catch (CustomException e) {
+            throw e;
+        } catch (Exception e) {
             System.out.println("에러 발생: " + e.getMessage());
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
