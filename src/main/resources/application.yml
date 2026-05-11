@@ -94,6 +94,9 @@ logging:
     org.hibernate.orm.jdbc.bind: trace
     org.springframework.web.cors: DEBUG
     org.springframework.security: DEBUG
+custom:
+  slack:
+    webhook-url: ${slack.webhook-url}
 
 # JWT 설정
 jwt:
