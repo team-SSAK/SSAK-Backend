@@ -1,124 +1,32 @@
-name: AI Code Review
+name: Code Review
+
+permissions:
+  contents: read
+  pull-requests: write
 
 on:
   pull_request:
-    types:
-      - opened
-      - synchronize
+    types: [opened, reopened, synchronize]
 
 jobs:
   review:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      pull-requests: write
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: Get PR Diff
-        run: |
-          git fetch origin ${{ github.base_ref }}
-
-          git diff origin/${{ github.base_ref }}...HEAD \
-            -- . ':(exclude)package-lock.json' \
-                 ':(exclude)pnpm-lock.yaml' \
-                 ':(exclude)yarn.lock' \
-                 ':(exclude)*.svg' \
-                 ':(exclude)*.png' \
-                 ':(exclude)*.jpg' \
-                 ':(exclude)*.jpeg' \
-                 ':(exclude)*.md' \
-                 > diff.txt
-
-          echo "==== DIFF SIZE ===="
-          wc -c diff.txt
-
-      - name: Call Gemini API
+      - uses: anc95/ChatGPT-CodeReview@main
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          PROMPT=$(cat <<'EOF'
-          You are a senior software engineer reviewing a pull request.
+          # 1. 깃허브 권한
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          Review the git diff below.
+          # 2. 제미나이 설정
+          # 이 액션에서 Gemini를 쓰려면 엔드포인트를 구글 주소로 바꿔줘야 합니다.
+          OPENAI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_ENDPOINT: https://generativelanguage.googleapis.com/v1beta/openai/
+          MODEL: gemini-1.5-flash
 
-          Focus on:
-          - Bugs
-          - Security issues
-          - Performance problems
-          - Bad practices
-          - NestJS / TypeScript best practices
-
-          Rules:
-          - Be concise
-          - Do not praise unnecessarily
-          - Ignore formatting unless problematic
-          - Respond in Korean
-          - Use markdown
-          - If there are no issues, say:
-            "특별한 문제는 발견되지 않았습니다."
-
-          GIT DIFF:
-          EOF
-          )
-
-          DIFF_CONTENT=$(cat diff.txt)
-
-          jq -n \
-            --arg prompt "$PROMPT" \
-            --arg diff "$DIFF_CONTENT" \
-            '{
-              contents: [
-                {
-                  parts: [
-                    {
-                      text: ($prompt + "\n\n" + $diff)
-                    }
-                  ]
-                }
-              ]
-            }' > request.json
-
-          curl -s \
-            -X POST \
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}" \
-            -H "Content-Type: application/json" \
-            -d @request.json \
-            > response.json
-
-          cat response.json
-
-      - name: Extract Review
-        run: |
-          REVIEW=$(jq -r '
-            .candidates[0].content.parts[0].text
-          ' response.json)
-
-          if [ "$REVIEW" = "null" ] || [ -z "$REVIEW" ]; then
-            REVIEW="AI 리뷰 생성에 실패했습니다."
-          fi
-
-          {
-            echo "review<<EOF"
-            echo "$REVIEW"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
-        id: extract
-
-      - name: Comment PR
-        uses: actions/github-script@v7
-        env:
-          REVIEW: ${{ steps.extract.outputs.review }}
-        with:
-          script: |
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: process.env.REVIEW
-            })
+          # 3. 공통 설정
+          LANGUAGE: Korean
+          PROMPT: "너는 시니어 백엔드 개발자야. Spring Boot와 Java 관점에서 코드의 잠재적인 버그나 N+1 문제, 가독성을 위주로 리뷰해줘."
+          MAX_PATCH_LENGTH: 10000
+          IGNORE_PATTERNS: "*.md, .gitignore, build/**" # 리뷰 안 해도 되는 파일들
