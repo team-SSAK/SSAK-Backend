@@ -16,7 +16,8 @@ jobs:
           fetch-depth: 0   # 전체 이력을 가져와 Diff 분석을 원활하게 함
 
       - name: AI Code Review
-        uses: sshnaidm/gemini-code-review-action@v2
+        uses: google-gemini/gemini-github-action@v1.1.0
         with:
-          gemini-key: ${{secrets.GEMINI_API_KEY}}
+          api_key: ${{secrets.GEMINI_API_KEY}}
           model: "gemini-1.5-flash"
+          exclude: "**/build/**, **/dist/**, .gitignore, *.md"
