@@ -1,22 +1,32 @@
-name: ai_review.yml
+name: Code Review
+
+permissions:
+  contents: read
+  pull-requests: write
+
 on:
   pull_request:
-    types: [opened, synchronize]  # PR이 열리거나 코드가 업데이트 될 때
+    types: [opened, reopened, synchronize]
 
 jobs:
   review:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # 전체 이력을 가져와 Diff 분석을 원활하게 함
+      - uses: actions/checkout@v4
 
-      - name: AI Code Review
-        uses: sshnaidm/gemini-code-review-action@v2
-        with:
-          gemini-key: ${{secrets.GEMINI_API_KEY}}
-          model: "gemini-1.5-flash"
+      - uses: anc95/ChatGPT-CodeReview@main
+        env:
+          # 1. 깃허브 권한
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # 2. 제미나이 설정
+          # 이 액션에서 Gemini를 쓰려면 엔드포인트를 구글 주소로 바꿔줘야 합니다.
+          OPENAI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_ENDPOINT: https://generativelanguage.googleapis.com/v1beta/openai/
+          MODEL: gemini-1.5-flash
+
+          # 3. 공통 설정
+          LANGUAGE: Korean
+          PROMPT: "너는 시니어 백엔드 개발자야. Spring Boot와 Java 관점에서 코드의 잠재적인 버그나 N+1 문제, 가독성을 위주로 리뷰해줘."
+          MAX_PATCH_LENGTH: 10000
+          IGNORE_PATTERNS: "*.md, .gitignore, build/**" # 리뷰 안 해도 되는 파일들

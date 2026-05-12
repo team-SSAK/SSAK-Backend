@@ -26,3 +26,4 @@
 # --- Logs (로그 파일) ---
 *.log
 logs/
+.gemini/

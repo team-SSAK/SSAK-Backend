@@ -28,6 +28,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     @Value("${jwt.refresh-expiration}")
     private long refreshExpiration;
 
+    @Value("${CUSTOM_SCHEME_URL}")
+    private String customSchemeUrl;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
@@ -50,7 +53,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         );
 
         // 3. 프론트엔드로 임시 코드 전달
-        String targetUrl = UriComponentsBuilder.fromUriString("exp://10.240.109.119:8081")
+        String targetUrl = UriComponentsBuilder.fromUriString(customSchemeUrl)
                 .queryParam("code", tempCode)
                 .build()
                 .toUriString();
