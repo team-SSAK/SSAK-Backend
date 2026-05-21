@@ -85,7 +85,8 @@ public class MeasurementService {
             String imgUrl = response.getImageUrl();
 
             // 2. Ratio에 따른 포인트 계산
-            int addedPoints = calculatePoints(leftoverRatio);
+            //int addedPoints = calculatePoints(leftoverRatio);
+            int addedPoints = 100; //TODO: 축제기간 동안 100포인트로 고정 - 추후 수정 필요
 
             // 3. 사용자 포인트 업데이트
             User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
