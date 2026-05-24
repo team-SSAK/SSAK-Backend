@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 콘솔에 JSON 형태로 로그를 찍는 어펜더(Appender) 설정 -->
+    <appender name="CONSOLE-JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <logLevel/>
+                <loggerName/>
+                <threadName/>
+                <message/>
+                <stackTrace/>
+                <!-- MDC(Trace ID 등이 담길 곳)를 JSON 필드로 확장 -->
+                <mdc/>
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- 로그를 파일로 저장하는 어펜더 -->
+    <appender name="FILE-JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 스프링 부트 애플리케이션 컨테이너 내부의 로그 저장 경로 -->
+        <file>/logs/ssak-json.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 날짜별로 로그 파일 분리하고 압축하여 저사양 서버 디스크 용량 아끼기-->
+            <fileNamePattern>/logs/archive/ssak-json.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>7</maxHistory> <!-- 7일치 보관-->
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp><timeZone>UTC</timeZone></timestamp>
+                <logLevel/><loggerName/><threadName/><message/><stackTrace/><mdc/>
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- 로컬 환경(local)과 운영 환경(prod)에 따라 로그 분기 -->
+    <!-- 개발할 때 JSON이 불편하다면 이 설정을 활용해 운영 환경에서만 켜지게 할 수 있습니다 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE-JSON" />
+        <appender-ref ref="FILE-JSON" />
+    </root>
+</configuration>

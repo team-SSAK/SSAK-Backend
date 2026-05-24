@@ -1,8 +1,6 @@
 package com.ssak.ssak.controller.user;
 
 import com.ssak.ssak.domain.user.dto.*;
-import com.ssak.ssak.exception.CustomException;
-import com.ssak.ssak.exception.ErrorCode;
 import com.ssak.ssak.service.user.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
