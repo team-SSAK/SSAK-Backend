@@ -59,6 +59,9 @@ dependencies {
 
     // 공간 데이터
     implementation 'org.hibernate.orm:hibernate-spatial'
+
+    // 로그 JSON으로 변환
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
 }
 
 tasks.named('test') {
