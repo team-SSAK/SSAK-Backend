@@ -19,6 +19,7 @@ public interface CouponWishRepository extends JpaRepository<CouponWish, Long> {
      */
     @Query("SELECT cw FROM CouponWish cw " +
            "JOIN FETCH cw.coupon " +
+           "JOIN FETCH cw.user " +  //user도 같이 가져오도록 수정
            "WHERE cw.user.userId = :userId")
     List<CouponWish> findAllByUser_UserId(@Param("userId") Long userId);
 
