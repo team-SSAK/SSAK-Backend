@@ -3,6 +3,8 @@ package com.ssak.ssak.domain.restaurant;
 import com.ssak.ssak.domain.restaurant.dto.RestaurantWishResponse;
 import com.ssak.ssak.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -16,7 +18,10 @@ public interface RestaurantWishRepository extends JpaRepository<RestaurantWish, 
      * @param userId
      * @return
      */
-    List<RestaurantWish> findAllByUser_UserId(Long userId);
+    @Query("SELECT rw FROM RestaurantWish rw " +
+           "JOIN FETCH rw.restaurant " +
+           "WHERE rw.user.userId = :userId")
+    List<RestaurantWish> findAllByUser_UserId(@Param("userId") Long userId);
 
     /**
      * 특정 사용자의 특정 식당 찜 여부를 확인하고, 존재할 경우 찜 상세 내역을 반환한다.
