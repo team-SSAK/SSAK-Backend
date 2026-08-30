@@ -40,6 +40,10 @@ public class User extends BaseEntity {
     @Column(name = "SIGNUP_ST")
     private SignupStatus signupStatus = SignupStatus.PENDING;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "USER_ROLE", nullable = false)
+    private UserRole userRole = UserRole.USER;
+
     public void changePassword(String newPassword) {
         this.userPw = newPassword;
     }

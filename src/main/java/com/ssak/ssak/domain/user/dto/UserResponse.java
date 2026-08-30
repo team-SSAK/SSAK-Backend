@@ -15,13 +15,15 @@ public class UserResponse {
     private String userNm;
     private int userPoint;
     private String userProfileImg;
+    private String userRole;
 
     public static UserResponse from(User user) {
         return new UserResponse(
           user.getUserEmail(),
           user.getUserNm(),
           user.getCurrentPoint(),
-          user.getUserProfileImg()
+          user.getUserProfileImg(),
+          user.getUserRole().name()
         );
     }
 }
