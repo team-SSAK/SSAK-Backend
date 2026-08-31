@@ -16,14 +16,26 @@ public class RestaurantListResponse {
     private String restaurantLocation;
     private String restaurantImgUrl;
     private boolean isWished;
+    private Double latitude;
+    private Double longitude;
 
     public static RestaurantListResponse from(Restaurant restaurant, boolean isWished) {
+        Double latitude = null;
+        Double longitude = null;
+
+        if (restaurant.getRestaurantCoord() != null) {
+            latitude = restaurant.getRestaurantCoord().getY();
+            longitude = restaurant.getRestaurantCoord().getX();
+        }
+
         return RestaurantListResponse.builder()
                 .restaurantId(restaurant.getRestaurantId())
                 .restaurantName(restaurant.getRestaurantName())
                 .restaurantLocation(restaurant.getRestaurantLocation())
                 .restaurantImgUrl(restaurant.getRestaurantImgUrl())
                 .isWished(isWished)
+                .latitude(latitude)
+                .longitude(longitude)
                 .build();
     }
 }

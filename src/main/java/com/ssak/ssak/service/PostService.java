@@ -6,6 +6,7 @@ import com.ssak.ssak.domain.restaurant.Restaurant;
 import com.ssak.ssak.domain.restaurant.RestaurantRepository;
 import com.ssak.ssak.domain.user.User;
 import com.ssak.ssak.domain.user.UserRepository;
+import com.ssak.ssak.domain.user.UserRole;
 import com.ssak.ssak.domain.util.Report;
 import com.ssak.ssak.domain.util.ReportRepository;
 import com.ssak.ssak.domain.util.ReportType;
@@ -44,10 +45,19 @@ public class PostService {
      * @return
      */
     @Transactional(readOnly = true)
-    public List<PostListResponse> getPostList(Long restId) {
+    public List<PostListResponse> getPostList(Long restId, Long userId) {
         List<Post> postList = postRepository.findAllByRestaurant_RestaurantId(restId);
 
+        User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getUserRole() == UserRole.OWNER || user.getUserRole() == UserRole.ADMIN) {
+            return postList.stream()
+                    .map(PostListResponse::from)
+                    .collect(Collectors.toList());
+        }
+
         return postList.stream()
+                .filter(post -> Boolean.TRUE.equals(post.getPostVisibility()))
                 .map(PostListResponse::from)
                 .collect(Collectors.toList());
     }

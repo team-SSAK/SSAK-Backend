@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class S3Service {
+    private static final Map<String, String> FOLDER_MAP = Map.of(
+            "profile", "profile_img/",
+            "post", "post_img/",
+            "restaurant", "restaurant_img/"
+    );
+
     private final AmazonS3 amazonS3;
 
     @Value("${cloud.aws.s3.bucket}")
@@ -54,17 +61,11 @@ public class S3Service {
      */
     public String uploadSingleImage(MultipartFile file, String fileType) {
 
-        String folderName = null;
-
-        // 이미지 종류에 따른 폴더 분리
-        if(fileType == "profile") {
-            folderName = "profile_img/";
-        } else if (fileType == "post") {
-            folderName = "post_img/";
-        } else if (fileType == "restaurant") {
-            folderName = "restaurant_img/";
+        String folderName = FOLDER_MAP.get(fileType);
+        if (folderName == null) {
+            throw new CustomException(ErrorCode.FILE_UPLOAD_ERROR);
         }
-        String fileName = folderName + "_" + UUID.randomUUID();
+        String fileName = folderName + UUID.randomUUID();
 
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(file.getSize());
@@ -93,9 +94,7 @@ public class S3Service {
         }
 
         return files.stream()
-                .map(file -> {
-                    return uploadSingleImage(file, fileType); // 기존 업로드 로직 호출
-                })
+                .map(file -> uploadSingleImage(file, fileType))
                 .collect(Collectors.toList());
     }
 }
