@@ -57,7 +57,7 @@ public class PostService {
         }
 
         return postList.stream()
-                .filter(post -> post.getPostVisibility())
+                .filter(post -> Boolean.TRUE.equals(post.getPostVisibility()))
                 .map(PostListResponse::from)
                 .collect(Collectors.toList());
     }
