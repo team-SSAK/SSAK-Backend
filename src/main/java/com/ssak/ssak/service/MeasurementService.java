@@ -8,6 +8,8 @@ import com.ssak.ssak.domain.measurement.MeasurementRepository;
 import com.ssak.ssak.domain.measurement.dto.AIResponse;
 import com.ssak.ssak.domain.measurement.dto.MeasurementResponse;
 import com.ssak.ssak.domain.measurement.dto.MeasurementValidResponse;
+import com.ssak.ssak.domain.restaurant.Restaurant;
+import com.ssak.ssak.domain.restaurant.RestaurantRepository;
 import com.ssak.ssak.domain.user.User;
 import com.ssak.ssak.domain.user.UserRepository;
 import com.ssak.ssak.exception.CustomException;
@@ -33,6 +35,7 @@ public class MeasurementService {
     private final UserRepository userRepository;
     private final MeasurementRepository measurementRepository;
     private final PointHistRepository pointHistRepository;
+    private final RestaurantRepository restaurantRepository;
 
     /**
      * 잔반을 측정한다
@@ -40,7 +43,11 @@ public class MeasurementService {
      * @param userId
      */
     @Transactional
-    public MeasurementResponse measureLeftover(MultipartFile file, Long userId) {
+    public MeasurementResponse measureLeftover(MultipartFile file, Long userId,
+                                               Long restaurantId, Double latitude, Double longitude) {
+        // 0. 횟수·쿨다운 검증 (프론트 우회 방지)
+        assertMeasurementAllowed(userId);
+
         // 1. RestClient를 사용한 파이썬 AI 모델 서버 통신
         if (file.isEmpty()) {
             throw new CustomException(ErrorCode.INCORRECT_IMAGE);
@@ -92,15 +99,34 @@ public class MeasurementService {
             User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
             user.addPoint(addedPoints);
 
-            // 4. 인식 기록 저장
+            // 4. 식당 반경 검증 및 식당 엔티티 조회
+            Restaurant restaurant = null;
+            if (restaurantId != null) {
+                restaurant = restaurantRepository.findById(restaurantId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.RESTAURANT_NOT_FOUND));
+
+                if (latitude != null && longitude != null && restaurant.getRestaurantCoord() != null) {
+                    double distance = haversineDistance(latitude, longitude,
+                            restaurant.getRestaurantCoord().getY(),  // latitude (Y in SRID 4326)
+                            restaurant.getRestaurantCoord().getX()); // longitude (X in SRID 4326)
+                    if (distance > 100) {
+                        throw new CustomException(ErrorCode.OUT_OF_RESTAURANT_RANGE);
+                    }
+                }
+            }
+
+            // 5. 인식 기록 저장
             Measurement measurement = Measurement.builder()
                     .user(user)
                     .mmPhotoUrl(imgUrl)
                     .leftoverRatio(leftoverRatio)
+                    .restaurant(restaurant)
+                    .shotLat(latitude)
+                    .shotLon(longitude)
                     .build();
             measurementRepository.save(measurement);
 
-            // 5. 포인트 내역에 저장
+            // 6. 포인트 내역에 저장
             PointHist pointHist = PointHist.savePoint(
                     user,
                     addedPoints,
@@ -115,6 +141,37 @@ public class MeasurementService {
             System.out.println("에러 발생: " + e.getMessage());
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * 잔반 인증 가능 여부를 검증한다. 불가 시 예외를 던진다.
+     */
+    private void assertMeasurementAllowed(Long userId) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
+
+        int todayCount = measurementRepository.countByUserUserIdAndCreatedAtAfter(userId, startOfDay);
+        if (todayCount >= 3) {
+            throw new CustomException(ErrorCode.DAILY_LIMIT_EXCEEDED);
+        }
+
+        Optional<Measurement> last = measurementRepository.findFirstByUserUserIdOrderByCreatedAtDesc(userId);
+        if (last.isPresent() && last.get().getCreatedAt().plusHours(4).isAfter(now)) {
+            throw new CustomException(ErrorCode.COOL_DOWN_PERIOD_LEFT);
+        }
+    }
+
+    /**
+     * Haversine 공식으로 두 좌표 사이의 거리(m)를 계산한다
+     */
+    private double haversineDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371000;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
     /**
