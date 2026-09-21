@@ -1,11 +1,9 @@
 package com.ssak.ssak.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssak.ssak.domain.Point.PointHist;
 import com.ssak.ssak.domain.Point.PointHistRepository;
 import com.ssak.ssak.domain.measurement.Measurement;
 import com.ssak.ssak.domain.measurement.MeasurementRepository;
-import com.ssak.ssak.domain.measurement.dto.AIResponse;
 import com.ssak.ssak.domain.measurement.dto.MeasurementResponse;
 import com.ssak.ssak.domain.measurement.dto.MeasurementValidResponse;
 import com.ssak.ssak.domain.restaurant.Restaurant;
@@ -14,14 +12,10 @@ import com.ssak.ssak.domain.user.User;
 import com.ssak.ssak.domain.user.UserRepository;
 import com.ssak.ssak.exception.CustomException;
 import com.ssak.ssak.exception.ErrorCode;
+import com.ssak.ssak.service.util.S3Service;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.MultipartBodyBuilder;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -31,7 +25,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class MeasurementService {
 
-    private final RestTemplate restTemplate;
+    private final GptVisionService gptVisionService;
+    private final S3Service s3Service;
     private final UserRepository userRepository;
     private final MeasurementRepository measurementRepository;
     private final PointHistRepository pointHistRepository;
@@ -48,48 +43,19 @@ public class MeasurementService {
         // 0. 횟수·쿨다운 검증 (프론트 우회 방지)
         assertMeasurementAllowed(userId);
 
-        // 1. RestClient를 사용한 파이썬 AI 모델 서버 통신
         if (file.isEmpty()) {
             throw new CustomException(ErrorCode.INCORRECT_IMAGE);
         }
 
         try {
-            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(10000);  // 연결 타임아웃 10초
-            factory.setReadTimeout(60000);    // 읽기 타임아웃 1분
+            // 1. GPT Vision으로 잔반 비율 분석
+            double leftoverRatio = gptVisionService.analyzeLeftoverRatio(file);
+            if (leftoverRatio < 0) {
+                throw new CustomException(ErrorCode.INCORRECT_IMAGE);
+            }
 
-            RestClient restClient = RestClient.builder()
-                    .requestFactory(factory)
-                    .build();
-
-            MultipartBodyBuilder builder = new MultipartBodyBuilder();
-            builder.part("file", file.getResource())
-                    .filename(file.getOriginalFilename())
-                    .contentType(MediaType.parseMediaType(file.getContentType()));
-
-            String rawResponse = restClient.post()
-                    .uri("http://ai-model-service:8000/api/predict")
-                    .contentType(MediaType.MULTIPART_FORM_DATA)
-                    .body(builder.build())
-                    .retrieve()
-                    .body(String.class);
-
-            ObjectMapper mapper = new ObjectMapper();
-            AIResponse response = mapper.readValue(rawResponse, AIResponse.class); //직접 파싱
-
-            // 유효성 검사
-            if (response == null || response.getLeftoverRatio() == null) {
-                throw new CustomException(ErrorCode.INCORRECT_RESPONSE);    
-            }            
-            Double leftoverRatio = response.getLeftoverRatio();            
-            // 식판 인식 실패 / 아무 사진    
-            if (leftoverRatio < 0) {            
-                throw new CustomException(ErrorCode.INCORRECT_IMAGE);       
-            }            
-            if (response.getImageUrl() == null) {            
-                throw new CustomException(ErrorCode.INCORRECT_RESPONSE);           
-            }          
-            String imgUrl = response.getImageUrl();
+            // 2. S3에 원본 이미지 업로드 (기록용)
+            String imgUrl = s3Service.uploadSingleImage(file, "measurement");
 
             // 2. Ratio에 따른 포인트 계산
             //int addedPoints = calculatePoints(leftoverRatio);

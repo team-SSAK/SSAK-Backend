@@ -40,18 +40,34 @@ public class User extends BaseEntity {
     @Column(name = "SIGNUP_ST")
     private SignupStatus signupStatus = SignupStatus.PENDING;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "USER_ROLE", nullable = false)
+    private UserRole userRole = UserRole.MEMBER;
+
+    @Column(name = "OWNED_RESTAURANT_ID", nullable = true)
+    private Long ownedRestaurantId;
+
+    @Column(name = "OWNER_APPROVED", nullable = false)
+    private boolean ownerApproved = false;
+
     public void changePassword(String newPassword) {
         this.userPw = newPassword;
     }
 
+    public void approveOwner() {
+        this.ownerApproved = true;
+    }
+
     @Builder
-    public User(String userEmail, String userPw, String userNm, LoginType loginType, String providerId, SignupStatus signupStatus) {
+    public User(String userEmail, String userPw, String userNm, LoginType loginType, String providerId, SignupStatus signupStatus, UserRole userRole, Long ownedRestaurantId) {
         this.userEmail = userEmail;
         this.userPw = userPw;
         this.userNm = userNm;
         this.loginType = loginType;
         this.providerId = providerId;
         this.signupStatus = signupStatus;
+        this.userRole = userRole != null ? userRole : UserRole.MEMBER;
+        this.ownedRestaurantId = ownedRestaurantId;
     }
 
     // 프로필 수정

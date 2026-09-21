@@ -1,6 +1,7 @@
 package com.ssak.ssak.domain.community.dto;
 
 import com.ssak.ssak.domain.community.Post;
+import com.ssak.ssak.domain.user.UserRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,8 +22,13 @@ public class PostListResponse {
     private LocalDateTime postCreateTime;
     private int postLikeCnt;
     private int postCommentCnt;
+    private boolean ownerPost;
 
     public static PostListResponse from(Post post) {
+        return from(post, false);
+    }
+
+    public static PostListResponse from(Post post, boolean ownerPost) {
         String userNm = null;
 
         if (post.getUser() != null) {
@@ -37,6 +43,7 @@ public class PostListResponse {
                 .postCreateTime(post.getCreatedAt())
                 .postLikeCnt(post.getPostLikeCnt())
                 .postCommentCnt(post.getPostCommentCnt())
+                .ownerPost(ownerPost)
                 .build();
     }
 }

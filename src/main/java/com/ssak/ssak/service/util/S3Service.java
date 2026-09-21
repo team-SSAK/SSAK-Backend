@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -54,17 +55,14 @@ public class S3Service {
      */
     public String uploadSingleImage(MultipartFile file, String fileType) {
 
-        String folderName = null;
-
-        // 이미지 종류에 따른 폴더 분리
-        if(fileType == "profile") {
-            folderName = "profile_img/";
-        } else if (fileType == "post") {
-            folderName = "post_img/";
-        } else if (fileType == "restaurant") {
-            folderName = "restaurant_img/";
-        }
-        String fileName = folderName + "_" + UUID.randomUUID();
+        Map<String, String> folderMap = Map.of(
+                "profile", "profile_img/",
+                "post", "post_img/",
+                "restaurant", "restaurant_img/",
+                "measurement", "measurement_img/"
+        );
+        String folderName = folderMap.getOrDefault(fileType, "etc_img/");
+        String fileName = folderName + UUID.randomUUID();
 
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(file.getSize());
