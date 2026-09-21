@@ -6,6 +6,7 @@ import com.ssak.ssak.domain.restaurant.Restaurant;
 import com.ssak.ssak.domain.restaurant.RestaurantRepository;
 import com.ssak.ssak.domain.user.User;
 import com.ssak.ssak.domain.user.UserRepository;
+import com.ssak.ssak.domain.user.UserRole;
 import com.ssak.ssak.domain.util.Report;
 import com.ssak.ssak.domain.util.ReportRepository;
 import com.ssak.ssak.domain.util.ReportType;
@@ -41,15 +42,32 @@ public class PostService {
     /**
      * 해당 식당에 해당하는 게시글을 모두 반환한다.
      * @param restId
+     * @param viewerUserId
      * @return
      */
     @Transactional(readOnly = true)
-    public List<PostListResponse> getPostList(Long restId) {
-        List<Post> postList = postRepository.findAllByRestaurant_RestaurantId(restId);
-
+    public List<PostListResponse> getPostList(Long restId, Long viewerUserId) {
+        List<Post> postList;
+        if (viewerUserId != null) {
+            User viewer = userRepository.findById(viewerUserId).orElse(null);
+            if (viewer != null && viewer.getUserRole() == UserRole.OWNER
+                    && viewer.isOwnerApproved()
+                    && restId.equals(viewer.getOwnedRestaurantId())) {
+                postList = postRepository.findAllByRestaurant_RestaurantId(restId);
+            } else {
+                postList = postRepository.findPublicByRestaurant_RestaurantId(restId);
+            }
+        } else {
+            postList = postRepository.findPublicByRestaurant_RestaurantId(restId);
+        }
         return postList.stream()
-                .map(PostListResponse::from)
+                .map(post -> PostListResponse.from(post, isOwnerPost(post)))
                 .collect(Collectors.toList());
+    }
+
+    private boolean isOwnerPost(Post post) {
+        if (post.getUser() == null) return false;
+        return post.getUser().getUserRole() == UserRole.OWNER && post.getUser().isOwnerApproved();
     }
 
     /**
@@ -99,6 +117,12 @@ public class PostService {
         // 1. DB에 저장
         Restaurant restaurant = restaurantRepository.findById(restId).orElseThrow(() -> new CustomException(ErrorCode.RESTAURANT_NOT_FOUND));
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.getUserRole() == UserRole.OWNER) {
+            if (!restId.equals(user.getOwnedRestaurantId())) {
+                throw new CustomException(ErrorCode.NOT_YOUR_RESTAURANT);
+            }
+        }
 
         Post post = Post.builder()
                 .postTitle(request.getPostTitle())
@@ -228,12 +252,10 @@ public class PostService {
      */
     @Transactional
     public String deletePost(Long postId, Long userId) {
-        //TODO: cascade 확인하기 - post-comment
-
         Post post = postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if(!post.getUser().equals(user)) {
+        if (user.getUserRole() != UserRole.ADMIN && !post.getUser().equals(user)) {
             throw new CustomException(ErrorCode.NOT_POST_OWNER);
         }
 
@@ -325,12 +347,10 @@ public class PostService {
      */
     @Transactional
     public String deleteComment(Long commentId, Long userId) {
-        //TODO: 그 밑에 댓글이 달린 댓글이 삭제될경우
-
         Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if(!comment.getUser().equals(user)) {
+        if (user.getUserRole() != UserRole.ADMIN && !comment.getUser().equals(user)) {
             throw new CustomException(ErrorCode.NOT_COMMENT_OWNER);
         }
         commentRepository.delete(comment);
