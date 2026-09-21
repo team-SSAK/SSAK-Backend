@@ -252,12 +252,10 @@ public class PostService {
      */
     @Transactional
     public String deletePost(Long postId, Long userId) {
-        //TODO: cascade 확인하기 - post-comment
-
         Post post = postRepository.findById(postId).orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if(!post.getUser().equals(user)) {
+        if (user.getUserRole() != UserRole.ADMIN && !post.getUser().equals(user)) {
             throw new CustomException(ErrorCode.NOT_POST_OWNER);
         }
 
@@ -349,12 +347,10 @@ public class PostService {
      */
     @Transactional
     public String deleteComment(Long commentId, Long userId) {
-        //TODO: 그 밑에 댓글이 달린 댓글이 삭제될경우
-
         Comment comment = commentRepository.findById(commentId).orElseThrow(() -> new CustomException(ErrorCode.COMMENT_NOT_FOUND));
         User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        if(!comment.getUser().equals(user)) {
+        if (user.getUserRole() != UserRole.ADMIN && !comment.getUser().equals(user)) {
             throw new CustomException(ErrorCode.NOT_COMMENT_OWNER);
         }
         commentRepository.delete(comment);
