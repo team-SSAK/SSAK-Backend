@@ -14,16 +14,24 @@ import com.ssak.ssak.exception.CustomException;
 import com.ssak.ssak.exception.ErrorCode;
 import com.ssak.ssak.service.util.S3Service;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MeasurementService {
+
+    // Java 21 가상 스레드 — I/O 블로킹 작업(GPT, S3)에 최적
+    private static final Executor IO_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
     private final GptVisionService gptVisionService;
     private final S3Service s3Service;
@@ -48,14 +56,25 @@ public class MeasurementService {
         }
 
         try {
-            // 1. GPT Vision으로 잔반 비율 분석
-            double leftoverRatio = gptVisionService.analyzeLeftoverRatio(file);
+            // 1. 파일 bytes를 한 번만 읽어 GPT·S3 모두 재사용
+            byte[] fileBytes = file.getBytes();
+            String contentType = file.getContentType();
+            long fileSize = file.getSize();
+
+            // 2. GPT Vision 분석 + S3 업로드를 가상 스레드에서 병렬 실행
+            CompletableFuture<GptVisionService.AnalysisResult> gptFuture = CompletableFuture.supplyAsync(
+                    () -> gptVisionService.analyzeLeftoverRatio(fileBytes, contentType), IO_EXECUTOR);
+            CompletableFuture<String> s3Future = CompletableFuture.supplyAsync(
+                    () -> s3Service.uploadBytes(fileBytes, contentType, fileSize, "measurement"), IO_EXECUTOR);
+
+            GptVisionService.AnalysisResult analysis = gptFuture.join(); // GPT 결과 먼저 대기
+            double leftoverRatio = analysis.ratio();
             if (leftoverRatio < 0) {
+                log.warn("잔반 인식 실패 — userId={}, reason={}", userId, analysis.reason());
                 throw new CustomException(ErrorCode.INCORRECT_IMAGE);
             }
 
-            // 2. S3에 원본 이미지 업로드 (기록용)
-            String imgUrl = s3Service.uploadSingleImage(file, "measurement");
+            String imgUrl = s3Future.join(); // GPT 유효할 때만 S3 결과 확정
 
             // 2. Ratio에 따른 포인트 계산
             //int addedPoints = calculatePoints(leftoverRatio);

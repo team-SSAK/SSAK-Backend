@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -76,6 +77,35 @@ public class S3Service {
             throw new CustomException(ErrorCode.FILE_UPLOAD_ERROR);
         } catch (IOException | SdkClientException e) {
             // 파일 읽기 실패 또는 네트워크 오류
+            log.error("S3 업로드 에러: {}", e.getMessage());
+            throw new CustomException(ErrorCode.FILE_UPLOAD_ERROR);
+        }
+        return amazonS3.getUrl(bucket, fileName).toString();
+    }
+
+    /**
+     * byte[] 데이터를 S3에 업로드하고 URL을 반환한다 (스트림 재사용 불가 문제 방지용).
+     */
+    public String uploadBytes(byte[] bytes, String contentType, long size, String fileType) {
+        Map<String, String> folderMap = Map.of(
+                "profile", "profile_img/",
+                "post", "post_img/",
+                "restaurant", "restaurant_img/",
+                "measurement", "measurement_img/"
+        );
+        String folderName = folderMap.getOrDefault(fileType, "etc_img/");
+        String fileName = folderName + UUID.randomUUID();
+
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(size);
+        metadata.setContentType(contentType != null ? contentType : "image/jpeg");
+
+        try {
+            amazonS3.putObject(new PutObjectRequest(bucket, fileName, new ByteArrayInputStream(bytes), metadata));
+        } catch (AmazonServiceException e) {
+            log.error("AWS 서비스 에러: {}", e.getErrorMessage());
+            throw new CustomException(ErrorCode.FILE_UPLOAD_ERROR);
+        } catch (SdkClientException e) {
             log.error("S3 업로드 에러: {}", e.getMessage());
             throw new CustomException(ErrorCode.FILE_UPLOAD_ERROR);
         }
