@@ -30,6 +30,9 @@ public class S3Service {
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
+    @Value("${spring.profiles.active:prod}")
+    private String activeProfile;
+
     /**
      * 기존 이미지를 삭제한다.
      * @param imageUrl
@@ -87,6 +90,10 @@ public class S3Service {
      * byte[] 데이터를 S3에 업로드하고 URL을 반환한다 (스트림 재사용 불가 문제 방지용).
      */
     public String uploadBytes(byte[] bytes, String contentType, long size, String fileType) {
+        if ("local".equals(activeProfile)) {
+            return "https://local-dummy-s3/" + fileType + "/" + UUID.randomUUID() + ".jpg";
+        }
+
         Map<String, String> folderMap = Map.of(
                 "profile", "profile_img/",
                 "post", "post_img/",
