@@ -15,5 +15,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "WHERE p.restaurant.restaurantId = :restId")
     List<Post> findAllByRestaurant_RestaurantId(Long restId);
 
+    @Query("SELECT p FROM Post p LEFT JOIN FETCH p.user WHERE p.restaurant.restaurantId = :restId AND p.postVisibility = true")
+    List<Post> findPublicByRestaurant_RestaurantId(Long restId);
+
     List<Post> findByUser(User user);
 }

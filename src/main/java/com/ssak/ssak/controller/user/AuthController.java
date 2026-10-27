@@ -1,6 +1,7 @@
 package com.ssak.ssak.controller.user;
 
 import com.ssak.ssak.domain.user.dto.*;
+import com.ssak.ssak.domain.user.dto.OwnerSignupRequest;
 import com.ssak.ssak.service.user.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -89,5 +90,10 @@ public class AuthController {
     @PostMapping("/token")
     public ResponseEntity<SocialLoginTokenResponse> exchangeToken(@RequestBody TokenRequest request) {
         return ResponseEntity.ok(authService.exchangeToken(request));
+    }
+
+    @PostMapping("/owner-signup")
+    public ResponseEntity<?> ownerSignup(@RequestBody OwnerSignupRequest request) {
+        return ResponseEntity.ok(authService.ownerSignUp(request));
     }
 }

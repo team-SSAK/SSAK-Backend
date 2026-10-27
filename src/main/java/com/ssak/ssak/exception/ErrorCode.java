@@ -58,7 +58,13 @@ public enum ErrorCode {
     INCORRECT_RESPONSE(HttpStatus.BAD_REQUEST, "M001", "AI 서버로 부터 올바르지 않은 응답을 받았습니다."),
     INCORRECT_IMAGE(HttpStatus.BAD_REQUEST, "M002", "잔반 이미지가 존재하지 않거나 올바르지 않습니다"),
     DAILY_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "M003", "오늘 인증횟수를 모두 사용했습니다"),
-    COOL_DOWN_PERIOD_LEFT(HttpStatus.BAD_REQUEST, "M004", "인증은 4시간 간격으로 가능합니다");
+    COOL_DOWN_PERIOD_LEFT(HttpStatus.BAD_REQUEST, "M004", "인증은 4시간 간격으로 가능합니다"),
+    OUT_OF_RESTAURANT_RANGE(HttpStatus.BAD_REQUEST, "M005", "식당 100m 반경을 벗어났습니다"),
+
+    // OWNER
+    OWNER_NOT_APPROVED(HttpStatus.FORBIDDEN, "O001", "사장님 계정 승인 대기 중입니다"),
+    NOT_YOUR_RESTAURANT(HttpStatus.FORBIDDEN, "O002", "본인 식당의 커뮤니티만 이용할 수 있습니다"),
+    RESTAURANT_ALREADY_HAS_OWNER(HttpStatus.BAD_REQUEST, "O003", "이미 사장님이 등록된 식당입니다");
 
     private final HttpStatus httpStatus;
     private final String code;

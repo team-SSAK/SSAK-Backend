@@ -125,3 +125,6 @@ cloud:
 
 server:
   forward-headers-strategy: native
+
+openai:
+  api-key: ${openai.api-key}

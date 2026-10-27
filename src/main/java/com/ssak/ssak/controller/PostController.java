@@ -21,11 +21,15 @@ public class PostController {
     /**
      * 해당 식당의 커뮤니티 게시글 목록을 반환한다.
      * @param restId
+     * @param userDetails
      * @return
      */
     @GetMapping("/{restId}")
-    public ResponseEntity<List<PostListResponse>> getPostList(@PathVariable Long restId) {
-        return ResponseEntity.ok(postService.getPostList(restId));
+    public ResponseEntity<List<PostListResponse>> getPostList(
+            @PathVariable Long restId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long userId = userDetails != null ? userDetails.getUserId() : null;
+        return ResponseEntity.ok(postService.getPostList(restId, userId));
     }
 
     /**

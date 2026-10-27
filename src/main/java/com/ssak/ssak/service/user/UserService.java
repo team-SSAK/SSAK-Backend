@@ -45,7 +45,7 @@ public class UserService {
 
         // 2. 이미지 파일이 새로 들어온 경우, S3 로직 수행
         String newImg = null;
-        if (request.getUserProfileImg() != null) {
+        if (request.getUserProfileImg() != null && !request.getUserProfileImg().isEmpty()) {
             s3Service.deleteExistingProfileImage(user.getUserProfileImg());
 
             //새 파일 업로드

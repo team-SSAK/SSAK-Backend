@@ -22,7 +22,8 @@ public class RestaurantController {
      */
     @GetMapping
     public ResponseEntity<List<RestaurantListResponse>> getRestaurantList(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        return ResponseEntity.ok(restaurantService.getRestaurantList(userDetails.getUserId()));
+        Long userId = userDetails != null ? userDetails.getUserId() : null;
+        return ResponseEntity.ok(restaurantService.getRestaurantList(userId));
     }
 
     /**

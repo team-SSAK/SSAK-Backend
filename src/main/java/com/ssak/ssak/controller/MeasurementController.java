@@ -26,8 +26,11 @@ public class MeasurementController {
      */
     @PostMapping(value ="/measure", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MeasurementResponse> measureLeftover(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                                               @RequestParam("file") MultipartFile file) {
-        return ResponseEntity.ok(measurementService.measureLeftover(file, userDetails.getUserId()));
+                                                               @RequestParam("file") MultipartFile file,
+                                                               @RequestParam(required = false) Long restaurantId,
+                                                               @RequestParam(required = false) Double latitude,
+                                                               @RequestParam(required = false) Double longitude) {
+        return ResponseEntity.ok(measurementService.measureLeftover(file, userDetails.getUserId(), restaurantId, latitude, longitude));
     }
 
     /**

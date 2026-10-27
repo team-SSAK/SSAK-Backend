@@ -1,38 +1,44 @@
 package com.ssak.ssak.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssak.ssak.domain.Point.PointHist;
 import com.ssak.ssak.domain.Point.PointHistRepository;
 import com.ssak.ssak.domain.measurement.Measurement;
 import com.ssak.ssak.domain.measurement.MeasurementRepository;
-import com.ssak.ssak.domain.measurement.dto.AIResponse;
 import com.ssak.ssak.domain.measurement.dto.MeasurementResponse;
 import com.ssak.ssak.domain.measurement.dto.MeasurementValidResponse;
+import com.ssak.ssak.domain.restaurant.Restaurant;
+import com.ssak.ssak.domain.restaurant.RestaurantRepository;
 import com.ssak.ssak.domain.user.User;
 import com.ssak.ssak.domain.user.UserRepository;
 import com.ssak.ssak.exception.CustomException;
 import com.ssak.ssak.exception.ErrorCode;
+import com.ssak.ssak.service.util.S3Service;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.MultipartBodyBuilder;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MeasurementService {
 
-    private final RestTemplate restTemplate;
+    // Java 21 가상 스레드 — I/O 블로킹 작업(GPT, S3)에 최적
+    private static final Executor IO_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
+
+    private final GptVisionService gptVisionService;
+    private final S3Service s3Service;
     private final UserRepository userRepository;
     private final MeasurementRepository measurementRepository;
     private final PointHistRepository pointHistRepository;
+    private final RestaurantRepository restaurantRepository;
 
     /**
      * 잔반을 측정한다
@@ -40,49 +46,35 @@ public class MeasurementService {
      * @param userId
      */
     @Transactional
-    public MeasurementResponse measureLeftover(MultipartFile file, Long userId) {
-        // 1. RestClient를 사용한 파이썬 AI 모델 서버 통신
+    public MeasurementResponse measureLeftover(MultipartFile file, Long userId,
+                                               Long restaurantId, Double latitude, Double longitude) {
+        // 0. 횟수·쿨다운 검증 (프론트 우회 방지)
+        assertMeasurementAllowed(userId);
+
         if (file.isEmpty()) {
             throw new CustomException(ErrorCode.INCORRECT_IMAGE);
         }
 
         try {
-            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(10000);  // 연결 타임아웃 10초
-            factory.setReadTimeout(60000);    // 읽기 타임아웃 1분
+            // 1. 파일 bytes를 한 번만 읽어 GPT·S3 모두 재사용
+            byte[] fileBytes = file.getBytes();
+            String contentType = file.getContentType();
+            long fileSize = file.getSize();
 
-            RestClient restClient = RestClient.builder()
-                    .requestFactory(factory)
-                    .build();
+            // 2. GPT Vision 분석 + S3 업로드를 가상 스레드에서 병렬 실행
+            CompletableFuture<GptVisionService.AnalysisResult> gptFuture = CompletableFuture.supplyAsync(
+                    () -> gptVisionService.analyzeLeftoverRatio(fileBytes, contentType), IO_EXECUTOR);
+            CompletableFuture<String> s3Future = CompletableFuture.supplyAsync(
+                    () -> s3Service.uploadBytes(fileBytes, contentType, fileSize, "measurement"), IO_EXECUTOR);
 
-            MultipartBodyBuilder builder = new MultipartBodyBuilder();
-            builder.part("file", file.getResource())
-                    .filename(file.getOriginalFilename())
-                    .contentType(MediaType.parseMediaType(file.getContentType()));
+            GptVisionService.AnalysisResult analysis = gptFuture.join(); // GPT 결과 먼저 대기
+            double leftoverRatio = analysis.ratio();
+            if (leftoverRatio < 0) {
+                log.warn("잔반 인식 실패 — userId={}, reason={}", userId, analysis.reason());
+                throw new CustomException(ErrorCode.INCORRECT_IMAGE);
+            }
 
-            String rawResponse = restClient.post()
-                    .uri("http://ai-model-service:8000/api/predict")
-                    .contentType(MediaType.MULTIPART_FORM_DATA)
-                    .body(builder.build())
-                    .retrieve()
-                    .body(String.class);
-
-            ObjectMapper mapper = new ObjectMapper();
-            AIResponse response = mapper.readValue(rawResponse, AIResponse.class); //직접 파싱
-
-            // 유효성 검사
-            if (response == null || response.getLeftoverRatio() == null) {
-                throw new CustomException(ErrorCode.INCORRECT_RESPONSE);    
-            }            
-            Double leftoverRatio = response.getLeftoverRatio();            
-            // 식판 인식 실패 / 아무 사진    
-            if (leftoverRatio < 0) {            
-                throw new CustomException(ErrorCode.INCORRECT_IMAGE);       
-            }            
-            if (response.getImageUrl() == null) {            
-                throw new CustomException(ErrorCode.INCORRECT_RESPONSE);           
-            }          
-            String imgUrl = response.getImageUrl();
+            String imgUrl = s3Future.join(); // GPT 유효할 때만 S3 결과 확정
 
             // 2. Ratio에 따른 포인트 계산
             //int addedPoints = calculatePoints(leftoverRatio);
@@ -92,15 +84,34 @@ public class MeasurementService {
             User user = userRepository.findById(userId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
             user.addPoint(addedPoints);
 
-            // 4. 인식 기록 저장
+            // 4. 식당 반경 검증 및 식당 엔티티 조회
+            Restaurant restaurant = null;
+            if (restaurantId != null) {
+                restaurant = restaurantRepository.findById(restaurantId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.RESTAURANT_NOT_FOUND));
+
+                if (latitude != null && longitude != null && restaurant.getRestaurantCoord() != null) {
+                    double distance = haversineDistance(latitude, longitude,
+                            restaurant.getRestaurantCoord().getY(),  // latitude (Y in SRID 4326)
+                            restaurant.getRestaurantCoord().getX()); // longitude (X in SRID 4326)
+                    if (distance > 100) {
+                        throw new CustomException(ErrorCode.OUT_OF_RESTAURANT_RANGE);
+                    }
+                }
+            }
+
+            // 5. 인식 기록 저장
             Measurement measurement = Measurement.builder()
                     .user(user)
                     .mmPhotoUrl(imgUrl)
                     .leftoverRatio(leftoverRatio)
+                    .restaurant(restaurant)
+                    .shotLat(latitude)
+                    .shotLon(longitude)
                     .build();
             measurementRepository.save(measurement);
 
-            // 5. 포인트 내역에 저장
+            // 6. 포인트 내역에 저장
             PointHist pointHist = PointHist.savePoint(
                     user,
                     addedPoints,
@@ -115,6 +126,37 @@ public class MeasurementService {
             System.out.println("에러 발생: " + e.getMessage());
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * 잔반 인증 가능 여부를 검증한다. 불가 시 예외를 던진다.
+     */
+    private void assertMeasurementAllowed(Long userId) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
+
+        int todayCount = measurementRepository.countByUserUserIdAndCreatedAtAfter(userId, startOfDay);
+        if (todayCount >= 3) {
+            throw new CustomException(ErrorCode.DAILY_LIMIT_EXCEEDED);
+        }
+
+        Optional<Measurement> last = measurementRepository.findFirstByUserUserIdOrderByCreatedAtDesc(userId);
+        if (last.isPresent() && last.get().getCreatedAt().plusHours(4).isAfter(now)) {
+            throw new CustomException(ErrorCode.COOL_DOWN_PERIOD_LEFT);
+        }
+    }
+
+    /**
+     * Haversine 공식으로 두 좌표 사이의 거리(m)를 계산한다
+     */
+    private double haversineDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371000;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
     /**

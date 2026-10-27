@@ -7,6 +7,7 @@ import com.ssak.ssak.security.OAuth.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -61,6 +62,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/docs/**"
                         ).permitAll()
+                        //식당 목록은 회원가입(토큰 발급 전) 중에도 조회 가능
+                        .requestMatchers(HttpMethod.GET, "/api/restaurants").permitAll()
                         //나머지는 모두 인증 필요
                         .anyRequest().authenticated()
                 )

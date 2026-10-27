@@ -9,8 +9,11 @@ import com.ssak.ssak.domain.community.PostRepository;
 import com.ssak.ssak.domain.coupon.CouponHistRepository;
 import com.ssak.ssak.domain.coupon.CouponWishRepository;
 import com.ssak.ssak.domain.measurement.MeasurementRepository;
+import com.ssak.ssak.domain.restaurant.RestaurantRepository;
 import com.ssak.ssak.domain.restaurant.RestaurantWishRepository;
 import com.ssak.ssak.domain.user.*;
+import com.ssak.ssak.domain.user.UserRole;
+import com.ssak.ssak.domain.user.dto.OwnerSignupRequest;
 import com.ssak.ssak.domain.user.dto.*;
 import com.ssak.ssak.domain.util.EmailVerificationType;
 import com.ssak.ssak.exception.CustomException;
@@ -51,6 +54,7 @@ public class AuthService {
     private final PointHistRepository pointHistRepository;
     private final CouponHistRepository couponHistRepository;
     private final CouponWishRepository couponWishRepository;
+    private final RestaurantRepository restaurantRepository;
     private final RestaurantWishRepository restaurantWishRepository;
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
@@ -124,6 +128,46 @@ public class AuthService {
         );
         pointHistRepository.save(pointHist);
 
+        return UserResponse.from(savedUser);
+    }
+
+    /**
+     * 사장님 회원가입을 수행합니다.
+     * @param request
+     * @return
+     */
+    @Transactional
+    public UserResponse ownerSignUp(OwnerSignupRequest request) {
+        if (userRepository.existsByUserEmail(request.getUserEmail())) {
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
+        }
+        if (!emailVerificationService.isVerified(request.getUserEmail(), EmailVerificationType.SIGNUP)) {
+            throw new CustomException(ErrorCode.EMAIL_NOT_VERIFIED);
+        }
+        com.ssak.ssak.domain.restaurant.Restaurant restaurant = restaurantRepository.findById(request.getRestaurantId())
+                .orElseThrow(() -> new CustomException(ErrorCode.RESTAURANT_NOT_FOUND));
+        if (userRepository.existsByOwnedRestaurantId(request.getRestaurantId())) {
+            throw new CustomException(ErrorCode.RESTAURANT_ALREADY_HAS_OWNER);
+        }
+        String encodedPassword = passwordEncoder.encode(request.getUserPw());
+        User user = User.builder()
+                .userEmail(request.getUserEmail())
+                .userPw(encodedPassword)
+                .userNm(request.getUserNm())
+                .loginType(LoginType.NORMAL)
+                .signupStatus(SignupStatus.ACTIVE)
+                .userRole(UserRole.OWNER)
+                .ownedRestaurantId(request.getRestaurantId())
+                .build();
+        User savedUser = userRepository.save(user);
+        Notification savedNotification = Notification.builder()
+                .user(savedUser)
+                .communityNotiYn(true)
+                .eventNotiYn(request.isMarketingAgreeYn())
+                .nightNotiYn(request.isMarketingAgreeYn())
+                .build();
+        notificationRepository.save(savedNotification);
+        emailVerificationService.clearVerification(request.getUserEmail(), EmailVerificationType.SIGNUP);
         return UserResponse.from(savedUser);
     }
 
