@@ -33,11 +33,13 @@ public class RestaurantService {
     public List<RestaurantListResponse> getRestaurantList(Long userId) {
         List<Restaurant> restaurants = restaurantRepository.findAll();
 
-        // 2. 사용자가 찜한 식당 ID들만 조회
-        Set<Long> wishedRestaurantIds = restaurantWishRepository.findAllByUser_UserId(userId)
-                .stream()
-                .map(wish -> wish.getRestaurant().getRestaurantId())
-                .collect(Collectors.toSet());
+        // 2. 사용자가 찜한 식당 ID들만 조회 (비로그인이면 찜 없음)
+        Set<Long> wishedRestaurantIds = userId == null
+                ? Set.of()
+                : restaurantWishRepository.findAllByUser_UserId(userId)
+                        .stream()
+                        .map(wish -> wish.getRestaurant().getRestaurantId())
+                        .collect(Collectors.toSet());
 
         // 3. 메모리에서 매핑
         return restaurants.stream()
